@@ -2,6 +2,7 @@
 # -*- coding: utf-8 -*-
 
 import pandas as pd
+import pandas.testing as pdt
 
 from fuzzy_match import fuzzy_match
 
@@ -30,19 +31,19 @@ def test_fuzzy_match_simple_case():
         'col_a',
         threshold=60,
         limit=2
+    ).reset_index(drop=True)
+
+    # Add expected output
+    df_expected = pd.DataFrame(
+        data={
+            'df_left_id': [0, 1, 2, 3, 4, 4],
+            'match_string': ['one', 'too', 'three', 'fours', 'five', 'five'],
+            'match_score': [100, 67, 100, 89, 100, 100],
+            'df_right_id': [0, 1, 2, 3, 4, 5]
+        }
     )
 
     # Test output
-    assert df_matches.equals(
-        pd.DataFrame(
-            index=[0, 2, 4, 6, 8, 9],
-            data={
-                'df_left_id': [0, 1, 2, 3, 4, 4],
-                'match_string': ['one', 'too', 'three', 'fours', 'five', 'five'],
-                'match_score': [100, 67, 100, 89, 100, 100],
-                'df_right_id': [0, 1, 2, 3, 4, 5]
-            }
-        )
-    )
+    pdt.assert_frame_equal(df_matches, df_expected)
 
     return
