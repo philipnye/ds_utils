@@ -1,26 +1,11 @@
-# %%
 # !/usr/bin/env python
 # -*- coding: utf-8 -*-
-
-'''
-    Purpose
-        Define fuzzy match, fuzzy merge functions
-    Inputs
-        None
-    Outputs
-        None
-    Parameters
-        None
-    Notes
-        None
-'''
 
 import pandas as pd
 
 from thefuzz import process
 
 
-# %%
 # Define fuzzy matching function
 def fuzzy_match(
     df_left, df_right, column_left, column_right, threshold=90, limit=1
@@ -113,63 +98,6 @@ def fuzzy_match(
     return df_matches
 
 
-# %%
-# Create dataframes
-df_left = pd.DataFrame({
-    'col_a': ['one', 'two', 'three', 'four', 'five'],
-    'col_b': [1, 2, 3, 4, 5]
-})
-df_right = pd.DataFrame({
-    'col_a': ['one', 'too', 'three', 'fours', 'five', 'five'],
-    'col_b': ['a', 'b', 'c', 'd', 'e', 'f']
-})
-
-# %%
-# Use function
-df_matches = fuzzy_match(
-    df_left,
-    df_right,
-    'col_a',
-    'col_a',
-    threshold=60,
-    limit=2
-)
-
-# %%
-df_matches
-
-# %%
-# Merge data
-df_output = df_left.merge(
-    df_matches,
-    how='left',
-    left_index=True,
-    right_on='df_left_id'
-).merge(
-    df_right,
-    how='left',
-    left_on='df_right_id',
-    right_index=True,
-    suffixes=['_df_left', '_df_right']
-)
-
-# %%
-df_output
-
-# %%
-# XXX For some reason the first merge operation wrecks the dataframe's index. Recreated from the
-# value we have in the matches lookup table
-df_output.set_index('df_left_id', inplace=True)
-
-# Drop columns used in the matching
-df_output = df_output[['col_a_df_left', 'col_b_df_left', 'col_b_df_right']]
-df_output.index.name = 'id'
-
-# %%
-df_output
-
-
-# %%
 # Define fuzzy merging function
 def fuzzy_merge(
     df_left, df_right, column_left, column_right, threshold=90, limit=1
@@ -230,15 +158,3 @@ def fuzzy_merge(
     df_output.index.name = 'id'
 
     return df_output
-
-
-# %%
-# Use fuzzy merge function
-df_output = fuzzy_merge(
-    df_left,
-    df_right,
-    'col_a',
-    'col_a',
-    threshold=60,
-    limit=2
-)
