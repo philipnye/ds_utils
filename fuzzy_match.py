@@ -4,25 +4,31 @@
 import pandas as pd
 
 from thefuzz import process
+import typing
 
 
 # Define fuzzy matching function
 def fuzzy_match(
-    df_left, df_right, column_left, column_right, threshold=90, limit=1
-):
+    df_left: pd.DataFrame,
+    df_right: pd.DataFrame,
+    column_left: typing.Hashable,
+    column_right: typing.Hashable,
+    threshold: int = 90,
+    limit: int = 1
+) -> pd.DataFrame:
     '''
         Fuzzy match two dataframes.
 
             Parameters:
-                - df_left, df_right (df): The dataframes to match
-                - column_left, column_right (str): Columns on which to match
-                - threshold (int): A score below which any matches
+                - df_left, df_right: The dataframes to match
+                - column_left, column_right: Columns on which to match
+                - threshold: A score below which any matches
                 will be dropped
-                - limit (int): The number of matches to find for each row
+                - limit: The number of matches to find for each row
                 in df_left
 
             Returns:
-                - df_matches (df): A dataframe of matches with columns
+                - df_matches: A dataframe of matches with columns
                 df_left_id, match_string, match_score, df_right_id
 
             Notes:
@@ -100,29 +106,31 @@ def fuzzy_match(
 
 # Define fuzzy merging function
 def fuzzy_merge(
-    df_left, df_right, column_left, column_right, threshold=90, limit=1
+    df_left: pd.DataFrame,
+    df_right: pd.DataFrame,
+    column_left: typing.Hashable,
+    column_right: typing.Hashable,
+    threshold: int = 90,
+    limit: int = 1
 ):
     '''
         Fuzzy merge two dataframes.
 
             Parameters:
-                - df_left, df_right (df): The dataframes to match
-                - column_left, column_right (str): Columns on which to match
-                - threshold (int): A score below which any matches
+                - df_left, df_right: The dataframes to match
+                - column_left, column_right: Columns on which to match
+                - threshold: A score below which any matches
                 will be dropped
-                - limit (int): The number of matches to find for each row
+                - limit: The number of matches to find for each row
                 in df_left
 
             Returns:
-                - df_matches (df): A dataframe of matches with columns
+                - df_matches: A dataframe of matches with columns
                 df_left_id, match_string, match_score, df_right_id
 
             Notes:
                 - This adds matches as rows rather than columns, to preserve a
                 tidy dataset
-                - Passing a series to process.extract() yields results in the
-                form [(<value>, <score>, <index>), ...].
-                (Ref: https://stackoverflow.com/a/63725864/4659442)
                 - Where df_right has a MultiIndex, the index is a tuple
     '''
 
