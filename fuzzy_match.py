@@ -4,15 +4,15 @@
 import pandas as pd
 
 from thefuzz import process
-import typing
+from typing import Hashable
 
 
 # Define fuzzy matching function
 def fuzzy_match(
     df_left: pd.DataFrame,
     df_right: pd.DataFrame,
-    column_left: typing.Hashable,
-    column_right: typing.Hashable,
+    column_left: Hashable,
+    column_right: Hashable,
     threshold: int = 90,
     limit: int = 1
 ) -> pd.DataFrame:
@@ -108,8 +108,8 @@ def fuzzy_match(
 def fuzzy_merge(
     df_left: pd.DataFrame,
     df_right: pd.DataFrame,
-    column_left: typing.Hashable,
-    column_right: typing.Hashable,
+    column_left: Hashable,
+    column_right: Hashable,
     threshold: int = 90,
     limit: int = 1
 ):
