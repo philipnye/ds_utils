@@ -35,12 +35,16 @@ def test_fuzzy_match_simple_case():
 
     # Add expected output
     df_expected = pd.DataFrame(
-        index=[0, 2, 4, 6, 8, 9],
+        index=pd.MultiIndex.from_arrays(
+            [
+                [0, 1, 2, 3, 4, 4],
+                [0, 1, 2, 3, 4, 5],
+            ],
+            names=['df_left_id', 'df_right_id']
+        ),
         data={
-            'df_left_id': [0, 1, 2, 3, 4, 4],
             'match_string': ['one', 'too', 'three', 'fours', 'five', 'five'],
             'match_score': [100, 67, 100, 89, 100, 100],
-            'df_right_id': [0, 1, 2, 3, 4, 5]
         }
     )
 

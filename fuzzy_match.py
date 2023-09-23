@@ -28,8 +28,9 @@ def fuzzy_match(
                 in df_left
 
             Returns:
-                - df_matches: A dataframe of matches with columns
-                df_left_id, match_string, match_score, df_right_id
+                - df_matches: A dataframe of matches with a MultiIndex
+                consisting of the ids from df_left and df_right, and
+                columns match_string, match_score
 
             Notes:
                 - This adds matches as rows rather than columns, to preserve a
@@ -92,6 +93,7 @@ def fuzzy_match(
     else:
         index_name = 'index'        # Default used by pandas
     df_matches.reset_index(inplace=True)
+
     # The previous index has now become a column: rename for ease of reference
     df_matches.rename(columns={index_name: 'df_left_id'}, inplace=True)
 
@@ -100,6 +102,11 @@ def fuzzy_match(
         df_matches.loc[df_matches['match_score'] < threshold].index,
         inplace=True
     )
+
+    # Set index
+    # NB: This  MultiIndex will be a unique index, as long
+    # as df_left and df_right have unique indexes
+    df_matches.set_index(['df_left_id', 'df_right_id'], inplace=True)
 
     return df_matches
 
