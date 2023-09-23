@@ -31,10 +31,11 @@ def test_fuzzy_match_simple_case():
         'col_a',
         threshold=60,
         limit=2
-    ).reset_index(drop=True)
+    )
 
     # Add expected output
     df_expected = pd.DataFrame(
+        index=[0, 2, 4, 6, 8, 9],
         data={
             'df_left_id': [0, 1, 2, 3, 4, 4],
             'match_string': ['one', 'too', 'three', 'fours', 'five', 'five'],
