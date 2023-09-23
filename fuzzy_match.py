@@ -38,7 +38,6 @@ def fuzzy_match(
                 - Passing a series to process.extract() yields results in the
                 form [(<value>, <score>, <index>), ...].
                 (Ref: https://stackoverflow.com/a/63725864/4659442)
-                - Where df_right has a MultiIndex, the index is a tuple
     '''
 
     # Create a series of matches
