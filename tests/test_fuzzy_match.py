@@ -45,7 +45,7 @@ def test_fuzzy_match_simple_case():
         ),
         data={
             'match_string': ['one', 'too', 'three', 'fours', 'five', 'five'],
-            'match_score': [100, 67, 100, 89, 100, 100],
+            'match_score': [100.000000, 66.666667, 100.000000, 88.888889, 100.000000, 100.000000],
         }
     )
 

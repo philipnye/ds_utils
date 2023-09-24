@@ -3,7 +3,7 @@
 
 import pandas as pd
 
-from thefuzz import process
+from rapidfuzz import process
 from typing import Hashable
 
 
