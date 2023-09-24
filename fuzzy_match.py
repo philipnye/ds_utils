@@ -3,7 +3,7 @@
 
 import pandas as pd
 
-from rapidfuzz import process
+from rapidfuzz import process, utils
 from typing import Hashable
 
 
@@ -14,7 +14,8 @@ def fuzzy_match(
     column_left: Hashable,
     column_right: Hashable,
     threshold: int = 90,
-    limit: int = 1
+    limit: int = 1,
+    clean_strings: bool = True
 ) -> pd.DataFrame:
     '''
         Fuzzy match two dataframes.
@@ -26,6 +27,9 @@ def fuzzy_match(
                 will be dropped
                 - limit: The number of matches to find for each row
                 in df_left
+                - clean_strings: Whether to apply rapidfuzz's default_process
+                processor, which converts strings to lowercase, removes
+                non-alphanumeric characters and trims whitespace
 
             Returns:
                 - df_matches: A dataframe of matches with a MultiIndex
@@ -44,7 +48,10 @@ def fuzzy_match(
     # Creates a series with id from df_left and column name _column_left_,
     # with _limit_ matches per item
     series_matches = df_left[column_left].apply(
-        lambda x: process.extract(x, df_right[column_right], limit=limit)
+        lambda x: process.extract(
+            x, df_right[column_right], limit=limit,
+            processor=utils.default_process if clean_strings else None
+        )
     )
 
     # Convert matches to a tidy dataframe
