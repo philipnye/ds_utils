@@ -21,7 +21,10 @@ def fuzzy_match(
         Fuzzy match two dataframes.
 
             Parameters:
-                - df_left, df_right: The dataframes to match
+                - df_left: The base dataframe which we want to find matches
+                for
+                - df_right: The dataframe in which we want to look for matches
+                to values in df_left
                 - column_left, column_right: Columns on which to match
                 - threshold: A score below which any matches
                 will be dropped
@@ -37,6 +40,8 @@ def fuzzy_match(
                 columns match_string, match_score
 
             Notes:
+                - The maximum number of matches that can be returned is
+                len(df_left) * limit
                 - This adds matches as rows rather than columns, to preserve a
                 tidy dataset
                 - Passing a series to process.extract() yields results in the
