@@ -8,7 +8,7 @@ import pytest
 from fuzzy_match import fuzzy_match
 
 
-def test_fuzzy_match_simple_case():
+def test_simple_case():
     '''
         Test non-empty, non-MultiIndex df_left, non-empty, non-MultiIndex df_right,
         where matches exist
@@ -55,7 +55,7 @@ def test_fuzzy_match_simple_case():
     return
 
 
-def test_fuzzy_match_clean_strings_false():
+def test_clean_strings_false():
     '''tests/test_fuzzy_match.py
         Test non-empty, non-MultiIndex df_left featuring punctuation,
         non-empty, non-MultiIndex df_right, where matches exist,
