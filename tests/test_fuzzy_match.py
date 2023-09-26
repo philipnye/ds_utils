@@ -188,3 +188,58 @@ def test_column_not_in_df():
         )
 
     return
+
+
+def test_empty_df():
+    '''
+        Test empty df_x, non-empty df_y
+    '''
+
+    # Create dataframes
+    df_left = pd.DataFrame(
+        data={},
+        columns=['col_a', 'col_b']
+    )
+    df_right = pd.DataFrame({
+        'col_a': ['one', 'too', 'three', 'fours', 'five', 'five'],
+        'col_b': ['a', 'b', 'c', 'd', 'e', 'f']
+
+    })
+
+    # Use function
+    df_matches = fuzzy_match(
+        df_left,
+        df_right,
+        'col_a',
+        'col_a',
+        score_cutoff=60,
+        limit=2,
+    )
+
+    # Add expected output
+    df_expected = pd.DataFrame(
+        index=pd.MultiIndex(
+            levels=[[], []],
+            codes=[[], []],
+            names=['df_left_id', 'df_right_id']
+        ),
+        columns=['match_string', 'match_score'],
+    )
+
+    # Test output
+    pdt.assert_frame_equal(df_matches, df_expected, check_index_type=False)
+
+    # Use function, reversing df_left and df_right
+    df_matches = fuzzy_match(
+        df_right,
+        df_left,
+        'col_a',
+        'col_a',
+        score_cutoff=60,
+        limit=2,
+    )
+
+    # Test output
+    pdt.assert_frame_equal(df_matches, df_expected, check_index_type=False)
+
+    return
