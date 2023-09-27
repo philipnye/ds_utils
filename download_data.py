@@ -18,6 +18,7 @@ import os
 import urllib.request
 
 import pandas as pd
+from typing import Optional, Union
 
 
 # DEFINE FUNCTION TO DOWNLOAD A FILE
@@ -87,3 +88,26 @@ def download_file(
                 )
 
     return
+
+
+def extract_filetype(filename: Union[str, float]) -> Optional[str]:
+    '''
+        Extract filetype from filename
+
+        Arguments
+            - filename: The name of the file
+
+        Returns
+            filetype: The filetype ending
+
+        Notes
+            None
+    '''
+    # Handle NaNs
+    if pd.isnull(filename):
+        return pd.NA
+
+    # Handle normal cases
+    else:
+        filetype = filename.split('.')[-1]
+        return filetype
