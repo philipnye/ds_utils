@@ -1,19 +1,6 @@
 # #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
-'''
-    Purpose
-        Standard functions to download data
-    Inputs
-        None
-    Outputs
-        None
-    Parameters
-        None
-    Notes
-        None
-'''
-
 import os
 import urllib.request
 
@@ -21,7 +8,55 @@ import pandas as pd
 from typing import Optional, Union
 
 
-# DEFINE FUNCTION TO DOWNLOAD A FILE
+def create_folder(path: str) -> None:
+    '''
+        Create a folder if it doesn't already exist
+
+        Parameters
+            path: Path to folder to create
+
+        Returns
+            None
+
+        Notes
+            None
+    '''
+    if not os.path.exists(path):
+        os.mkdir(path)
+
+    return
+
+
+def extract_filetype(
+    filename: Union[str, float],
+    with_dot: bool = False
+) -> Optional[str]:
+    '''
+        Extract filetype from filename
+
+        Arguments
+            - filename: The name of the file
+
+        Returns
+            filetype: The filetype ending
+
+        Notes
+            None
+    '''
+    # Handle NaNs
+    if pd.isnull(filename):
+        return pd.NA
+
+    # Handle normal cases
+    else:
+        filetype = filename.split('.')[-1]
+
+        if with_dot:
+            filetype = '.' + filetype
+
+        return filetype
+
+
 def download_file(
     url, data_folder_path,
     logs_folder_path, logs_file_name='download_log.txt',
@@ -88,26 +123,3 @@ def download_file(
                 )
 
     return
-
-
-def extract_filetype(filename: Union[str, float]) -> Optional[str]:
-    '''
-        Extract filetype from filename
-
-        Arguments
-            - filename: The name of the file
-
-        Returns
-            filetype: The filetype ending
-
-        Notes
-            None
-    '''
-    # Handle NaNs
-    if pd.isnull(filename):
-        return pd.NA
-
-    # Handle normal cases
-    else:
-        filetype = filename.split('.')[-1]
-        return filetype
