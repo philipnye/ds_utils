@@ -27,6 +27,36 @@ def create_folder(path: str) -> None:
     return
 
 
+def extract_filename(
+    url: Union[str, float],
+    with_extension: bool = True
+) -> Optional[str]:
+    '''
+        Extract filetype from URL
+
+        Arguments
+            - url: A link to the file
+
+        Returns
+            filename: The name of the file
+
+        Notes
+            None
+    '''
+    # Handle NaNs
+    if pd.isnull(url):
+        return pd.NA
+
+    # Handle normal cases
+    else:
+        url = url.split('/')[-1]
+
+        if not with_extension:
+            url = url.split('.')[0]
+
+        return url
+
+
 def extract_filetype(
     filename: Union[str, float],
     with_dot: bool = False
