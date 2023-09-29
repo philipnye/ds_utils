@@ -1,6 +1,7 @@
 # #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
+import inspect
 import os
 import urllib.request
 
@@ -34,7 +35,7 @@ def extract_filename(
     '''
         Extract filetype from URL
 
-        Arguments
+        Parameters
             - url: A link to the file
 
         Returns
@@ -64,7 +65,7 @@ def extract_filetype(
     '''
         Extract filetype from filename
 
-        Arguments
+        Parameters
             - filename: The name of the file
 
         Returns
@@ -153,3 +154,75 @@ def download_file(
                 )
 
     return
+
+
+def read_data_file(
+    file_path: str,
+    filename: Union[str, float],
+    file_ending: str,
+    force_to_dict: bool = False,
+    **kwargs,
+) -> pd.DataFrame:
+    '''
+        Read in data from spreadsheet or flat file to a dataframe
+
+        Parameters
+            file_path: Path to file
+            filename: Name of file, including file ending
+            file_ending: File ending of file
+            force_to_dict: Whether to force the output to be a dictionary
+            of dataframes, even if there is only one dataframe, as
+            when we use read_csv() or when the file only contains one
+            sheet
+            **kwargs: Additional arguments to pass to pandas read_csv()
+            or read_excel()
+
+        Returns
+            return_data: Dataframe of data, or dictionary of dataframes
+
+        Notes
+            None
+    '''
+    # Restrict kwargs to those that are valid for the function
+    # being used
+    # ref: https://stackoverflow.com/a/44052550/4659442
+    if file_ending == '.csv' or file_ending == '.txt':
+        sig = inspect.signature(pd.read_csv)
+    elif file_ending == '.ods' or file_ending == '.xlsx':
+        sig = inspect.signature(pd.read_excel)
+
+    kwargs = {
+        key: value for key, value in kwargs.items()
+        if key in sig.parameters.keys()
+    }
+
+    # Read in data
+    if file_ending == '.csv':
+        return_data = pd.read_csv(
+            file_path + '/' + filename,
+            **kwargs,
+        )
+    elif file_ending == '.ods':
+        return_data = pd.read_excel(
+            file_path + '/' + filename,
+            engine='odf',
+            **kwargs,
+        )
+    elif file_ending == '.txt':
+        return_data = pd.read_csv(
+            file_path + '/' + filename,
+            sep='\t',
+            **kwargs,
+        )
+    elif file_ending == '.xlsx':
+        return_data = pd.read_excel(
+            file_path + '/' + filename,
+            **kwargs,
+        )
+    else:
+        raise ValueError('File ending not recognised: ' + file_ending)
+
+    if force_to_dict:
+        return_data = {filename: return_data}
+
+    return return_data
