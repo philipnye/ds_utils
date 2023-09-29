@@ -206,7 +206,7 @@ def read_data_file(
     logs_folder_path: Optional[str] = None,
     logs_file_name: str = 'read_log.txt',
     **kwargs,
-) -> pd.DataFrame:
+) -> Union[dict, pd.DataFrame]:
     '''
         Read in data from spreadsheet or flat file to a dataframe,
         optionally logging the outcome
