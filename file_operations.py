@@ -3,10 +3,10 @@
 
 import inspect
 import os
+from typing import Optional, Union
 import urllib.request
 
 import pandas as pd
-from typing import Optional, Union
 
 
 def create_folder(path: str) -> None:
@@ -94,10 +94,48 @@ def extract_filetype(
         return filetype
 
 
+def log_details(
+    filename: str,
+    logs_folder_path: str,
+    logs_file_name: str,
+    message: str
+):
+    '''
+        Log details of file actions
+
+        Parameters
+            filename: Name of file
+            logs_folder_path: Path to folder to save log to
+            logs_file_name: Name of log file
+            message: Message to log, along with filename
+
+        Returns
+            None
+
+        Notes
+            None
+    '''
+
+    # Change directory
+    if logs_folder_path is None:
+        raise ValueError('logs_folder_path must be specified where save_logs=True')
+    else:
+        os.chdir(logs_folder_path)
+
+    # Log details
+    with open(logs_file_name, 'a') as log:
+        log.write(
+            str(pd.Timestamp.now()) + ' - ' +
+            filename + ' ' + message + '\n'
+        )
+
+    return
+
+
 def download_file(
     url, data_folder_path,
     rename_data_file=False, new_filename=None,
-    overwrite_existing=False, log_details=True,
+    overwrite_existing=False, save_logs=False,
     logs_folder_path=None, logs_file_name='download_log.txt'
 ):
     '''
@@ -112,7 +150,7 @@ def download_file(
             - rename_data_file: Whether to rename the data file
             - new_filename: New filename to use if renaming
             - overwrite_existing: Whether to overwrite existing file
-            - log_details: Whether to log details of the download
+            - save_logs: Whether to log details of the download
 
         Returns
             None
@@ -143,33 +181,18 @@ def download_file(
         urllib.request.urlretrieve(url, filename)
 
         # Log details if required
-        if log_details:
+        if save_logs:
+            log_details(
+                filename, logs_folder_path, logs_file_name,
+                message='downloaded from ' + url
+            )
 
-            # Change directory
-            if logs_folder_path is None:
-                raise ValueError('logs_folder_path must be specified where log_details=True')
-            else:
-                os.chdir(logs_folder_path)
-
-            with open(logs_file_name, 'a') as log:
-                log.write(
-                    str(pd.Timestamp.now()) + ' - ' +
-                    filename + ' downloaded from ' + url + '\n'
-                )
     else:
-        if log_details:
-
-            # Change directory
-            if logs_folder_path is None:
-                raise ValueError('logs_folder_path must be specified where log_details=True')
-            else:
-                os.chdir(logs_folder_path)
-
-            with open(logs_file_name, 'a') as log:
-                log.write(
-                    str(pd.Timestamp.now()) + ' - ' +
-                    filename + ' already exists\n'
-                )
+        if save_logs:
+            log_details(
+                filename, logs_folder_path, logs_file_name,
+                message='already exists'
+            )
 
     return
 
@@ -179,7 +202,7 @@ def read_data_file(
     filename: Union[str, float],
     file_ending: str,
     force_to_dict: bool = False,
-    log_details: bool = True,
+    save_logs: bool = False,
     logs_folder_path: Optional[str] = None,
     logs_file_name: str = 'read_log.txt',
     **kwargs,
@@ -197,7 +220,7 @@ def read_data_file(
             when we use read_csv() or when the file only contains one
             sheet
             logs_folder_path: Path to folder to save log to
-            log_details: Whether to log details of the read
+            save_logs: Whether to log details of the read
             logs_file_name: Name of log file
             **kwargs: Additional arguments to pass to pandas read_csv()
             or read_excel()
@@ -251,20 +274,11 @@ def read_data_file(
         raise ValueError('File ending not recognised: ' + file_ending)
 
     # Log details if required
-    if log_details:
-
-        # Change directory
-        if logs_folder_path is None:
-            raise ValueError('logs_folder_path must be specified where log_details=True')
-        else:
-            os.chdir(logs_folder_path)
-
-        # Log details
-        with open(logs_file_name, 'a') as log:
-            log.write(
-                str(pd.Timestamp.now()) + ' - ' +
-                filename + ' read' + '\n'
-            )
+    if save_logs:
+        log_details(
+            filename, logs_folder_path, logs_file_name,
+            message='read'
+        )
 
     # Force result to be a dictionary if required
     if force_to_dict and not isinstance(return_data, dict):
