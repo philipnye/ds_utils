@@ -222,7 +222,8 @@ def read_data_file(
     else:
         raise ValueError('File ending not recognised: ' + file_ending)
 
-    if force_to_dict:
-        return_data = {filename: return_data}
+    # Forece result to be a dictionary if required
+    if force_to_dict and not isinstance(return_data, dict):
+        return_data = {0: return_data}
 
     return return_data
