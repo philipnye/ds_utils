@@ -60,13 +60,16 @@ def extract_filename(
 
 def extract_filetype(
     filename: Union[str, float],
-    with_dot: bool = False
+    with_dot: bool = False,
+    lowercase: bool = True
 ) -> Optional[str]:
     '''
         Extract filetype from filename
 
         Parameters
             - filename: The name of the file
+            - with_dot: Whether to include the dot in the output
+            - lowercase: Whether to return the filetype in lowercase
 
         Returns
             filetype: The filetype ending
@@ -84,6 +87,9 @@ def extract_filetype(
 
         if with_dot:
             filetype = '.' + filetype
+
+        if lowercase:
+            filetype = filetype.lower()
 
         return filetype
 
@@ -183,6 +189,10 @@ def read_data_file(
         Notes
             None
     '''
+    # Check file ending is valid
+    if file_ending not in ['.csv', '.ods', '.txt', '.xlsx']:
+        raise ValueError('File ending not recognised: ' + file_ending)
+
     # Restrict kwargs to those that are valid for the function
     # being used
     # ref: https://stackoverflow.com/a/44052550/4659442
