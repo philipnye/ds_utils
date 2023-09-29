@@ -96,9 +96,9 @@ def extract_filetype(
 
 def download_file(
     url, data_folder_path,
-    logs_folder_path, logs_file_name='download_log.txt',
     rename_data_file=False, new_filename=None,
-    overwrite_existing=False, log_details=True
+    overwrite_existing=False, log_details=True,
+    logs_folder_path=None, logs_file_name='download_log.txt'
 ):
     '''
         Download a file from a URL, checking first whether it already
@@ -144,7 +144,13 @@ def download_file(
 
         # Log details if required
         if log_details:
-            os.chdir(logs_folder_path)
+
+            # Change directory
+            if logs_folder_path is None:
+                raise ValueError('logs_folder_path must be specified where log_details=True')
+            else:
+                os.chdir(logs_folder_path)
+
             with open(logs_file_name, 'a') as log:
                 log.write(
                     str(pd.Timestamp.now()) + ' - ' +
@@ -152,7 +158,13 @@ def download_file(
                 )
     else:
         if log_details:
-            os.chdir(logs_folder_path)
+
+            # Change directory
+            if logs_folder_path is None:
+                raise ValueError('logs_folder_path must be specified where log_details=True')
+            else:
+                os.chdir(logs_folder_path)
+
             with open(logs_file_name, 'a') as log:
                 log.write(
                     str(pd.Timestamp.now()) + ' - ' +
@@ -167,10 +179,14 @@ def read_data_file(
     filename: Union[str, float],
     file_ending: str,
     force_to_dict: bool = False,
+    log_details: bool = True,
+    logs_folder_path: Optional[str] = None,
+    logs_file_name: str = 'read_log.txt',
     **kwargs,
 ) -> pd.DataFrame:
     '''
-        Read in data from spreadsheet or flat file to a dataframe
+        Read in data from spreadsheet or flat file to a dataframe,
+        optionally logging the outcome
 
         Parameters
             file_path: Path to file
@@ -180,6 +196,9 @@ def read_data_file(
             of dataframes, even if there is only one dataframe, as
             when we use read_csv() or when the file only contains one
             sheet
+            logs_folder_path: Path to folder to save log to
+            log_details: Whether to log details of the read
+            logs_file_name: Name of log file
             **kwargs: Additional arguments to pass to pandas read_csv()
             or read_excel()
 
@@ -189,9 +208,6 @@ def read_data_file(
         Notes
             None
     '''
-    # Check file ending is valid
-    if file_ending not in ['.csv', '.ods', '.txt', '.xlsx']:
-        raise ValueError('File ending not recognised: ' + file_ending)
 
     # Restrict kwargs to those that are valid for the function
     # being used
@@ -200,6 +216,8 @@ def read_data_file(
         sig = inspect.signature(pd.read_csv)
     elif file_ending == '.ods' or file_ending == '.xlsx':
         sig = inspect.signature(pd.read_excel)
+    else:
+        raise ValueError('File ending not recognised: ' + file_ending)
 
     kwargs = {
         key: value for key, value in kwargs.items()
@@ -232,7 +250,23 @@ def read_data_file(
     else:
         raise ValueError('File ending not recognised: ' + file_ending)
 
-    # Forece result to be a dictionary if required
+    # Log details if required
+    if log_details:
+
+        # Change directory
+        if logs_folder_path is None:
+            raise ValueError('logs_folder_path must be specified where log_details=True')
+        else:
+            os.chdir(logs_folder_path)
+
+        # Log details
+        with open(logs_file_name, 'a') as log:
+            log.write(
+                str(pd.Timestamp.now()) + ' - ' +
+                filename + ' read' + '\n'
+            )
+
+    # Force result to be a dictionary if required
     if force_to_dict and not isinstance(return_data, dict):
         return_data = {0: return_data}
 
