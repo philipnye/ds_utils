@@ -94,6 +94,42 @@ def extract_filetype(
         return filetype
 
 
+def get_sheet_info(file_path, filename, file_ending):
+    '''
+        Purpose
+            Get information about sheets in a file
+        Inputs
+            file_path: str - path to file
+            filename: str - name of file
+            file_ending: str - file ending
+        Outputs
+            sheet_info: dict - dictionary containing sheet names and number of sheets
+        Notes
+            None
+        Future developments
+            This could probably be optimised by using openpyxl (.xlsx) or xlrd (.xls)
+            or ?? (.ods) rather than read_excel(), which reads the whole file into memory
+            rather than just the sheet names
+    '''
+    if file_ending == '.csv' or file_ending == '.txt':
+        n_sheets = 1
+        sheet_names = None
+    elif file_ending == '.xlsx':
+        xl_file = pd.ExcelFile(file_path + '/' + filename)
+        sheet_names = xl_file.sheet_names
+        n_sheets = len(sheet_names)
+    elif file_ending == '.ods':
+        xl_file = pd.ExcelFile(file_path + '/' + filename, engine='odf')
+        sheet_names = xl_file.sheet_names
+        n_sheets = len(sheet_names)
+    else:
+        raise ValueError('File ending not recognised')
+
+    sheet_info = {'n_sheets': n_sheets, 'sheet_names': sheet_names}
+
+    return sheet_info
+
+
 def log_details(
     filename: str,
     logs_folder_path: str,
