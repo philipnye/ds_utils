@@ -3,7 +3,8 @@
 
 import inspect
 import os
-from typing import Optional, Union
+import re
+from typing import Literal, Optional, Union
 import urllib.request
 
 import pandas as pd
@@ -94,18 +95,21 @@ def extract_filetype(
         return filetype
 
 
-def get_sheet_info(file_path, filename, file_ending):
+def get_sheet_info(file_path: str, filename: str, file_ending: str) -> dict():
     '''
-        Purpose
-            Get information about sheets in a file
-        Inputs
-            file_path: str - path to file
-            filename: str - name of file
-            file_ending: str - file ending
-        Outputs
-            sheet_info: dict - dictionary containing sheet names and number of sheets
+        Get information about sheets in a file
+
+        Parameters
+            file_path: Path to folder
+            filename: Name of file
+            file_ending: File ending
+
+        Returns
+            sheet_info: Dictionary containing sheet names and number of sheets
+
         Notes
             None
+
         Future developments
             This could probably be optimised by using openpyxl (.xlsx) or xlrd (.xls)
             or ?? (.ods) rather than read_excel(), which reads the whole file into memory
@@ -128,6 +132,81 @@ def get_sheet_info(file_path, filename, file_ending):
     sheet_info = {'n_sheets': n_sheets, 'sheet_names': sheet_names}
 
     return sheet_info
+
+
+def read_excel_sheet_name_regex(
+    file_path: str,
+    filename: str,
+    file_ending: str,
+    regex_sheet_name: Union[bool, Literal['loose', 'strict']],
+    **kwargs,
+) -> Union[dict, pd.DataFrame]:
+    '''
+        Read in data from spreadsheet to a dataframe, using a regex
+        to match the sheet name, and return all matches
+
+        Parameters
+            file_path: Path to folder
+            filename: Name of file, including file ending
+            file_ending: File ending of file
+            regex_sheet_name: Which type of regex to apply. See
+            read_data_file() for details of allowed value
+
+            **kwargs: Additional arguments to pass to pandas' read_excel()
+
+        Returns
+            return_data: Dataframe of data, or dictionary of dataframes
+
+        Notes
+            None
+
+        Future developments
+            Make this consistent with read_excel() and replace first
+            three args with path
+    '''
+
+    # Raise errors
+    if file_ending not in ['.ods', '.xlsx']:
+        raise ValueError('File ending not recognised: ' + file_ending)
+
+    if 'sheet_name' not in kwargs.keys():
+        raise ValueError('sheet_name must be provided')
+
+    # Read sheet names of file
+    sheet_names = get_sheet_info(file_path, filename, file_ending)['sheet_names']
+
+    # Filter sheets
+    if regex_sheet_name == 'loose' and len(sheet_names) == 1:
+        matching_sheet_names = sheet_names
+    elif regex_sheet_name or regex_sheet_name == 'strict':
+
+        # Compile regex
+        r = re.compile(kwargs['sheet_name'])
+
+        # Get sheet names that match regex
+        matching_sheet_names = list(
+            filter(r.match, sheet_names)
+        )
+
+    # Save matching sheet names back to kwargs, converting
+    # list to a string where only one element
+    # NB: This is done so that we don't pass two sheet_name args
+    # to read_excel() - one explicitly and the other as part of
+    # **kwargs
+    # NB: This is done so that read_excel() returns a df
+    # rather than a dict of dfs
+    if len(matching_sheet_names) == 1:
+        kwargs['sheet_name'] = matching_sheet_names[0]
+    else:
+        kwargs['sheet_name'] = matching_sheet_names
+
+    # Read in data
+    return_data = pd.read_excel(
+        file_path + '/' + filename,
+        **kwargs,
+    )
+
+    return return_data
 
 
 def log_details(
@@ -237,6 +316,8 @@ def read_data_file(
     file_path: str,
     filename: Union[str, float],
     file_ending: str,
+    regex_sheet_name: Union[bool, Literal['loose', 'strict']] = False,
+    drop_na: bool = False,
     force_to_dict: bool = False,
     save_logs: bool = False,
     logs_folder_path: Optional[str] = None,
@@ -248,9 +329,20 @@ def read_data_file(
         optionally logging the outcome
 
         Parameters
-            file_path: Path to file
+            file_path: Path to folder
             filename: Name of file, including file ending
             file_ending: File ending of file
+            regex_sheet_name: Whether to use a regex to match sheet names.
+            Where True or 'strict', strict matching is used - meaning the
+            sheet name must match the regex patterns provided in the sheet_name
+            kwarg exactly. Where 'loose', if the spreadsheet consists of
+            one sheet only, this will be returned even if it doesn't match
+            the regex pattern provided in sheet_name. 'strict' is the same
+            as True, but is provided for clarity
+            drop_na: Whether to apply pandas' dropna() before returning
+            the result. This is useful for getting rid of empty or near-
+            empty rows or columns, which can sometimes be the source of
+            problems when attempting to work with the data
             force_to_dict: Whether to force the output to be a dictionary
             of dataframes, even if there is only one dataframe, as
             when we use read_csv() or when the file only contains one
@@ -258,56 +350,69 @@ def read_data_file(
             logs_folder_path: Path to folder to save log to
             save_logs: Whether to log details of the read
             logs_file_name: Name of log file
-            **kwargs: Additional arguments to pass to pandas read_csv()
-            or read_excel()
+            **kwargs: Additional arguments to pass to pandas' read_csv(),
+            read_excel() or dropna()
 
         Returns
             return_data: Dataframe of data, or dictionary of dataframes
 
         Notes
-            None
+            kwargs need to be split into those that are valid for
+            the read functions and dropna() so that arguments that are
+            not valid for a function aren't passed to it
     '''
 
-    # Restrict kwargs to those that are valid for the function
+    # Restrict kwargs to those that are valid for the functions
     # being used
-    # ref: https://stackoverflow.com/a/44052550/4659442
+    # Ref: https://stackoverflow.com/a/44052550/4659442
     if file_ending == '.csv' or file_ending == '.txt':
-        sig = inspect.signature(pd.read_csv)
+        read_sig = inspect.signature(pd.read_csv)
     elif file_ending == '.ods' or file_ending == '.xlsx':
-        sig = inspect.signature(pd.read_excel)
+        read_sig = inspect.signature(pd.read_excel)
     else:
         raise ValueError('File ending not recognised: ' + file_ending)
 
-    kwargs = {
+    read_kwargs = {
         key: value for key, value in kwargs.items()
-        if key in sig.parameters.keys()
+        if key in read_sig.parameters.keys()
     }
 
+    if drop_na:
+        drop_na_sig = inspect.signature(pd.DataFrame.dropna)
+
+        drop_na_kwargs = {
+            key: value for key, value in kwargs.items()
+            if key in drop_na_sig.parameters.keys()
+        }
+
     # Read in data
-    if file_ending == '.csv':
+    if file_ending in ['.csv', '.txt']:
         return_data = pd.read_csv(
             file_path + '/' + filename,
-            **kwargs,
+            **read_kwargs,
         )
-    elif file_ending == '.ods':
-        return_data = pd.read_excel(
-            file_path + '/' + filename,
-            engine='odf',
-            **kwargs,
-        )
-    elif file_ending == '.txt':
-        return_data = pd.read_csv(
-            file_path + '/' + filename,
-            sep='\t',
-            **kwargs,
-        )
-    elif file_ending == '.xlsx':
-        return_data = pd.read_excel(
-            file_path + '/' + filename,
-            **kwargs,
-        )
-    else:
-        raise ValueError('File ending not recognised: ' + file_ending)
+    elif file_ending in ['.ods', '.xlsx']:
+        if regex_sheet_name:
+            if 'sheet_name' not in read_kwargs.keys():
+                raise ValueError('sheet_name must be provided where regex_sheet_name')
+
+            return_data = read_excel_sheet_name_regex(
+                file_path,
+                filename,
+                file_ending,
+                regex_sheet_name=regex_sheet_name,
+                **read_kwargs,
+            )
+
+        else:
+            return_data = pd.read_excel(
+                file_path + '/' + filename,
+                **read_kwargs,
+            )
+
+    # Drop NaNs if required
+    if drop_na:
+        return_data.dropna(**drop_na_kwargs, inplace=True)
 
     # Log details if required
     if save_logs:
