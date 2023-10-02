@@ -48,6 +48,7 @@ def test_function_on_iterable(
     ----------
     iterable: The iterable to test
     function: The function to test
+    empty_iterable_result: The result to return if the iterable is empty
 
     Returns
     -------
