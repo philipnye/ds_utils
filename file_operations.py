@@ -375,6 +375,7 @@ def read_spreadsheetflatfile(
     file_path: str,
     filename: Union[str, float],
     file_ending: str,
+    encoding: Optional[Union[str, list]] = None,
     regex_sheet_name: Union[bool, Literal['loose', 'strict']] = False,
     drop_na: bool = False,
     force_to_dict: bool = False,
@@ -391,6 +392,9 @@ def read_spreadsheetflatfile(
             file_path: Path to folder
             filename: Name of file, including file ending
             file_ending: File ending of file
+            encoding: Encoding to use when reading a flat file. Where
+            encoding is a list, the function will try each encoding
+            in turn
             regex_sheet_name: Whether to use a regex to match sheet names.
             Where True or 'strict', strict matching is used - meaning the
             sheet name must match the regex patterns provided in the sheet_name
@@ -446,10 +450,22 @@ def read_spreadsheetflatfile(
 
     # Read in data
     if file_ending in ['.csv', '.txt']:
-        return_data = pd.read_csv(
-            file_path + '/' + filename,
-            **read_kwargs,
-        )
+        if encoding and isinstance(encoding, list):
+            for enc in encoding:
+                try:
+                    return_data = pd.read_csv(
+                        file_path + '/' + filename,
+                        encoding=enc,
+                        **read_kwargs,
+                    )
+                    break
+                except UnicodeDecodeError:
+                    continue
+        else:
+            return_data = pd.read_csv(
+                file_path + '/' + filename,
+                **read_kwargs,
+            )
     elif file_ending in ['.ods', '.xlsx']:
         if regex_sheet_name:
             if 'sheet_name' not in read_kwargs.keys():
