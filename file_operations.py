@@ -4,7 +4,7 @@
 import inspect
 import os
 import re
-from typing import Literal, Optional, Union
+from typing import Callable, Literal, Optional, Union
 import urllib.request
 
 import pandas as pd
@@ -316,6 +316,65 @@ def read_data_file(
     file_path: str,
     filename: Union[str, float],
     file_ending: str,
+    date_stamped: bool = False,
+    **kwargs,
+) -> Union[list, dict, pd.DataFrame]:
+    '''
+        Read in data from spreadsheet, flat file or pickle
+
+        Parameters
+            file_path: Path to folder
+            filename: Name of file, including file ending
+            file_ending: File ending of file
+            date_stamped: Whether to look for datestamped files
+            **kwargs: Additional arguments to pass to read_datestamped_file()
+            or read_data_file()
+
+        Returns
+            return_data: Returns the data type returned by read_datestamped_file()
+            or read_data_file()
+
+        Notes
+            None
+        '''
+
+    # Read in data
+    if file_ending in ['.csv', '.ods', '.txt', '.xlsx'] and date_stamped:
+        return_data = read_datestamped_data_file(
+            file_path,
+            filename,
+            file_ending,
+            read_function=read_spreadsheetflatfile(),
+            **kwargs,
+        )
+    elif file_ending in ['.csv', '.ods', '.txt', '.xlsx']:
+        return_data = read_data_file(
+            file_path + '/' + filename,
+            **kwargs,
+        )
+    elif file_ending == '.pkl' and date_stamped:
+        return_data = read_datestamped_data_file(
+            file_path,
+            filename,
+            file_ending,
+            read_function=pd.read_pickle,
+            **kwargs,
+        )
+    elif file_ending == '.pkl':
+        return_data = pd.read_pickle(
+            file_path + '/' + filename,
+            **kwargs,
+        )
+    else:
+        raise ValueError('File ending not recognised: ' + file_ending)
+
+    return return_data
+
+
+def read_spreadsheetflatfile(
+    file_path: str,
+    filename: Union[str, float],
+    file_ending: str,
     regex_sheet_name: Union[bool, Literal['loose', 'strict']] = False,
     drop_na: bool = False,
     force_to_dict: bool = False,
@@ -325,8 +384,8 @@ def read_data_file(
     **kwargs,
 ) -> Union[dict, pd.DataFrame]:
     '''
-        Read in data from spreadsheet or flat file to a dataframe,
-        optionally logging the outcome
+        Read in data from spreadsheet or flat file, optionally logging
+        the outcome
 
         Parameters
             file_path: Path to folder
@@ -424,5 +483,120 @@ def read_data_file(
     # Force result to be a dictionary if required
     if force_to_dict and not isinstance(return_data, dict):
         return_data = {0: return_data}
+
+    return return_data
+
+
+def read_datestamped_data_file(
+    file_path: str,
+    filename: Union[str, float],
+    file_ending: str,
+    file_choice: Literal['latest', 'all'],
+    read_function: Callable,
+    **kwargs,
+) -> Union[list, dict, pd.DataFrame]:
+    '''
+        Read in data from a datestamped spreadsheet, flat file or pickle
+
+        Parameters
+            file_path: Path to folder
+            filename: Name of file, including file ending, minus datestamp
+            file_ending: File ending of file
+            file_choice: Which file or files to read. If 'latest', only
+            the latest file will be read. If 'all', all files will be read
+            read_function: Function to use to read in the file
+            **kwargs: Additional arguments to pass to read_function()
+
+        Returns
+            return_data: Returns a list where file_choice='latest' and read_function()
+            returns a list. Returns a dict where file_choice='latest' and read_function()
+            returns a dict, or returns a dict with keys as filenames and values one of
+            several options where file_choice='all'. Returns a dataframe where
+            file_choice='latest' and read_function() returns a dataframe.
+
+        Notes
+            This only works with dates formatted as %Y-%m-%d, the ISO standard format
+            This can return multiple files, because we select files
+            minus the datestamp, and then read in all files that match
+
+        Future enhancements
+            Add date_format argument, allowing the user to use date formats
+            other than %Y-%m-%d
+    '''
+
+    # Strip file ending from filename
+    # NB: We do this because we want to match all files that start
+    # with the filename, then have a datestamp, then have the file
+    # ending - we will not match files if we keep the file ending
+    # after the first part of the filename
+    filename = filename.split('.')[0]
+
+    # Read names of all files in directory
+    all_files = os.listdir(file_path)
+
+    # Filter to only those that match the filename
+    matching_files = [
+        file for file in all_files
+        if re.search(filename, file)
+    ]
+    if len(matching_files) == 0:
+        raise FileNotFoundError('No files found with filename ' + filename)
+
+    # Filter to only those that contain a datestamp in the expected format
+    matching_files = [
+        file for file in matching_files
+        if re.search(r'\d{4}-\d{2}-\d{2}', file)
+    ]
+    if len(matching_files) == 0:
+        raise FileNotFoundError(
+            'No files found with a datestamp in the expected format, %Y-%m-%d'
+        )
+
+    # Select file to read
+    if file_choice == 'latest':
+        files_to_read = max(matching_files)
+    elif file_choice == 'all':
+        files_to_read = matching_files
+    else:
+        raise ValueError('file_choice not recognised: ' + file_choice)
+
+    # Read in data
+    if file_choice == 'latest':
+        if read_function == pd.read_pickle:
+            return_data = read_function(
+                file_path + '/' + files_to_read
+            )
+        else:
+            return_data = read_function(
+                file_path,
+                files_to_read,
+                file_ending,
+                **kwargs,
+            )
+    elif file_choice == 'all':
+        if read_function == pd.read_pickle:
+            return_data = {
+                file: read_function(
+                    file_path + '/' + file
+                ) for file in files_to_read
+            }
+        else:
+            return_data = {
+                file: read_function(
+                    file_path,
+                    file,
+                    file_ending,
+                    **kwargs,
+                ) for file in files_to_read
+            }
+
+    # Print filename(s) read
+    if file_choice == 'latest':
+        print('Read ' + files_to_read)
+    else:
+        if len(files_to_read) == 1:
+            print('Read ' + files_to_read[0])
+        else:
+            print('Read:\n' + '\n'.join(files_to_read))
 
     return return_data
