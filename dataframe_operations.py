@@ -89,6 +89,8 @@ def create_multiindex(
 
     Notes
         Any existing index or columns are implicitly dropped
+        This function does not have an inplace option, as the way the
+        dataframe is recreated means that inplace=True would not work
     '''
 
     # Create header row, column names if not provided
@@ -139,6 +141,7 @@ def forward_fill_headers(
     df: pd.DataFrame,
     header_count: int,
     axis: Union[Literal[0], Literal[1], Literal['index'], Literal['columns']] = 0,
+    inplace: bool = False,
 ) -> pd.DataFrame:
     '''
     Forward fill all header rows/columns in a dataframe, filling rows/columns
@@ -147,8 +150,11 @@ def forward_fill_headers(
 
     Parameters
         df: The dataframe to operate on
+        header_count: The number of header rows/columns to forward fill
         axis: The axis to forward fill. If 0 or 'index', forward fill rows.
         If 1 or 'columns', forward fill columns
+        inplace: If True, operate on the dataframe in place. If False, return
+        a copy of the dataframe
 
     Returns
         df: The dataframe with forward filled headers
@@ -156,6 +162,10 @@ def forward_fill_headers(
     Notes
         Ref: https://stackoverflow.com/a/72041766/4659442
     '''
+
+    # Make a copy of the dataframe if not inplace
+    if not inplace:
+        df = df.copy()
 
     # Forward fill first header
     if header_count > 0:
@@ -183,4 +193,8 @@ def forward_fill_headers(
                     :
                 ].groupby(i-1, sort=False)[[i]].ffill()[i]
 
-    return df
+    # Return dataframe
+    if inplace:
+        return None
+    else:
+        return df
