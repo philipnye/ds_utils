@@ -161,33 +161,43 @@ def forward_fill_headers(
 
     Notes
         Ref: https://stackoverflow.com/a/72041766/4659442
+        This assumes that the index/columns are numbers
     '''
 
     # Make a copy of the dataframe if not inplace
     if not inplace:
         df = df.copy()
 
+    # Determine index/columns min
+    # NB: This is needed as in the next step we can't assume
+    # that index/column row numbering starts at zero -
+    # handling the case where rows have been dropped
+    if axis in [0, 'index']:
+        header_min = df.index.min()
+    elif axis in [1, 'columns']:
+        header_min = df.columns.min()
+    else:
+        raise ValueError('axis must be one of 0/1/index/columns')
+
     # Forward fill first header
     if header_count > 0:
         if axis in [0, 'index']:
-            df.loc[0].ffill(inplace=True)
+            df.loc[header_min].ffill(inplace=True)
         elif axis in [1, 'columns']:
-            df.loc[:, 0].ffill(inplace=True)
-        else:
-            raise ValueError('axis must be one of 0/1/index/columns')
+            df.loc[:, header_min].ffill(inplace=True)
     else:
         raise ValueError('header_count must be > 0')
 
     # Forward fill subsequent headers, if there are any
     if header_count > 1:
         if axis in [0, 'index']:
-            for i in range(1, header_count):
+            for i in range(header_min+1, header_min+header_count):
                 df.loc[i] = df.loc[
                     :,
                     df.loc[i-1].notna()
                 ].T.groupby(i-1, sort=False)[[i]].ffill()[i]
         elif axis in [1, 'columns']:
-            for i in range(1, header_count):
+            for i in range(header_min+1, header_min+header_count):
                 df.loc[:, i] = df.loc[
                     df.loc[:, i-1].notna(),
                     :
