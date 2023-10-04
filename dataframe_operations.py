@@ -208,3 +208,53 @@ def forward_fill_headers(
         return None
     else:
         return df
+
+
+def check_number_rowscolumns(
+    df: pd.DataFrame,
+    min: int,
+    max: int,
+    axis: Union[Literal[0], Literal[1], Literal['index'], Literal['columns']] = 0,
+) -> bool:
+    '''
+    Check that the number of rows/columns in the df is within a specified range
+
+    Parameters
+        df: The dataframe to operate on
+        min: The minimum number of rows/columns
+        max: The maximum number of rows/columns
+
+    Returns
+        result: True if the number of rows/columns is within the specified range,
+        otherwise False
+
+    Notes
+        This checks that the row/column count is within the specified range,
+        inclusive
+    '''
+
+    # Check that min is an integer
+    if not isinstance(min, int):
+        raise TypeError('min must be an integer')
+
+    # Check that max is an integer
+    if not isinstance(max, int):
+        raise TypeError('max must be an integer')
+
+    # Check that min, max is >= 0
+    if min < 0 or max < 0:
+        raise ValueError('min and max must be >= 0')
+
+    # Check that min <= max
+    if min > max:
+        raise ValueError('min must be <= max')
+
+    # Check that min <= number of rows <= max
+    if axis in [0, 'index']:
+        result = min <= df.shape[0] <= max
+    elif axis in [1, 'columns']:
+        result = min <= df.shape[1] <= max
+    else:
+        raise ValueError('axis must be one of 0/1/index/columns')
+
+    return result
