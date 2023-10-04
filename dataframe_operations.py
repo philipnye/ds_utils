@@ -29,7 +29,7 @@ def identify_first_numeric(
     '''
 
     header_count = df.apply(
-        lambda x: x.astype(str).str.isnumeric().any(),
+        lambda x: x.astype(str).str[0].str.isnumeric().any(),
         axis=axis
     ).idxmax()
 
