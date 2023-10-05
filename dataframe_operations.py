@@ -258,3 +258,65 @@ def check_number_rowscolumns(
         raise ValueError('axis must be one of 0/1/index/columns')
 
     return result
+
+
+def turn_row_into_rows(
+    df: pd.DataFrame,
+    row: int,
+    sep: str,
+) -> pd.DataFrame:
+    '''
+    Turn a row into multiple rows, splitting on a separator
+
+    Parameters
+        df: The dataframe to operate on
+        row: The row to split
+        sep: The separator to split on
+
+    Returns
+        df: The dataframe with the row split into multiple rows
+
+    Notes
+        None
+
+    Future developments
+        Allow passing None as sep, in which case the function will
+        try to identify the separator automatically, looking
+        at the punctuation used most commonly in the row
+    '''
+
+    # Check if separator appears in row
+    if not any(sep in value for value in df.iloc[row].values.tolist()):
+        raise ValueError(f'sep {sep} not in row {row}')
+
+    # Split row into list
+    col_list = df.iloc[row].str.split(sep)
+
+    # Make all items the same length
+    # NB: This is needed in order for df.explode to work
+    max_len = max([len(x) for x in col_list])
+
+    for col in col_list:
+        if len(col) < max_len:
+            col.extend([None] * (max_len - len(col)))
+
+    df_new_rows = pd.DataFrame([col_list],)
+
+    df_new_rows = df_new_rows.explode(
+        column=df_new_rows.columns.tolist()
+    )
+
+    # Create copy of original dataframe
+    # NB: We do this in order to safely drop the original row
+    df_result = df.copy()
+
+    # Drop original row
+    df_result.drop(row, axis=0, inplace=True)
+
+    # Append new rows
+    df_result = pd.concat(
+        [df_new_rows, df_result],
+        ignore_index=True
+    ).reset_index(drop=True)
+
+    return df_result
