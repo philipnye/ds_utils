@@ -264,6 +264,7 @@ def turn_row_into_rows(
     df: pd.DataFrame,
     row: int,
     sep: str,
+    strict: bool = True,
 ) -> pd.DataFrame:
     '''
     Turn a row into multiple rows, splitting on a separator
@@ -272,6 +273,7 @@ def turn_row_into_rows(
         df: The dataframe to operate on
         row: The row to split
         sep: The separator to split on
+        strict: If True, raise an error if the separator is not in the row
 
     Returns
         df: The dataframe with the row split into multiple rows
@@ -286,8 +288,16 @@ def turn_row_into_rows(
     '''
 
     # Check if separator appears in row
-    if not any(sep in value for value in df.iloc[row].values.tolist()):
+    # NB: dropna() is needed as otherwise the function will fail if we
+    # have NaNs in the row, as we can't iterate on them
+    if strict and not any(
+        sep in value for value in df.iloc[row].dropna().values.tolist()
+    ):
         raise ValueError(f'sep {sep} not in row {row}')
+    elif not strict and not any(
+        sep in value for value in df.iloc[row].dropna().values.tolist()
+    ):
+        return df
 
     # Split row into list
     col_list = df.iloc[row].str.split(sep)
