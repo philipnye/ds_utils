@@ -333,18 +333,26 @@ def turn_row_into_rows(
     ):
         return df
 
-    # Split row into list
-    col_list = df.iloc[row].str.split(sep)
+    # Split columns into list
+    # NB: col_list is a series of lists or NaNs where a column contains
+    # only of NaNs. We've previously dropped columns where header rows
+    # are entirely NaN - but because we're operating on a single header
+    # row here it is possible to get NaNs
+    col_lists = df.iloc[row].str.split(sep)
 
     # Make all items the same length
+    # NB: We need to treat NaNs differently as len(NaN) results
+    # in a TypeError. Columns will be lists where they are not NaN
     # NB: This is needed in order for df.explode to work
-    max_len = max([len(x) for x in col_list])
+    max_len = max([len(x) for x in col_lists if x is not type(x) is list])
 
-    for col in col_list:
-        if len(col) < max_len:
-            col.extend([None] * (max_len - len(col)))
+    col_lists = col_lists.apply(
+        lambda x:
+            x + [pd.NA] * (max_len - len(x)) if type(x) is list
+            else [pd.NA] * max_len
+    )
 
-    df_new_rows = pd.DataFrame([col_list],)
+    df_new_rows = pd.DataFrame([col_lists],)
 
     df_new_rows = df_new_rows.explode(
         column=df_new_rows.columns.tolist()
