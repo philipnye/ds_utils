@@ -9,6 +9,7 @@ import pandas as pd
 def identify_first_numeric(
     df: pd.DataFrame,
     axis: Union[Literal[0], Literal[1], Literal['index'], Literal['columns']] = 0,
+    exclude: Union[None, int, list, str] = None,
 ) -> int:
     '''
     Identify the first non-NaN numeric column or row in a dataframe
@@ -28,8 +29,41 @@ def identify_first_numeric(
         This does not pick up NaNs due to the application of astype(str)
     '''
 
+    # Define helper function
+    def check_nonnan_numeric_in_column(column: pd.Series) -> bool:
+        '''
+        Check if a column contains any numeric values, excluding NaNs
+
+        Parameters
+            column: The column to check
+
+        Returns
+            result: True if the column contains any numeric values, otherwise False
+
+        Notes
+            This
+        '''
+
+        # Check if any values are numeric
+        # NB: This checks the first character of each value,
+        # in order to avoid picking up NaNs
+        # Ref: https://stackoverflow.com/a/70613999/4659442
+        result = column.astype(str).str[0].str.isnumeric().any()
+
+        return result
+
+    # Identify first numeric
+    # NB: Explicitly checking if exclude is None, as we want to
+    # treat the case where exclude is 0 differently
     header_count = df.apply(
-        lambda x: x.astype(str).str[0].str.isnumeric().any(),
+        lambda x: check_nonnan_numeric_in_column(x) if exclude is None
+        else check_nonnan_numeric_in_column(x) if (
+            type(exclude) in [int, str] and not x.name == exclude
+        )
+        else check_nonnan_numeric_in_column(x) if (
+            type(exclude) is list and x.name not in exclude
+        )
+        else None,
         axis=axis
     ).idxmax()
 
