@@ -453,6 +453,9 @@ def change_rowcolumn_case(
     # NB: This fixes the case of the exceptions supplied, as they
     # will have been converted to case in the previous step
     # NB: This only matches full strings, not partial strings
+    # NB: Special handling is required where case == 'sentence' as
+    # the exception can either appear at the start of the string
+    # or part way through
     if excepted_strings:
 
         # Build dictionary of exceptions to correct
@@ -464,6 +467,9 @@ def change_rowcolumn_case(
             dict_exceptions = {
                 r'\b' + str(x.capitalize()) + r'\b': x for x in excepted_strings
             }
+            dict_exceptions.update({
+                r'\b' + str(x.lower()) + r'\b': x for x in excepted_strings
+            })
         elif case == 'title':
             dict_exceptions = {
                 r'\b' + str(x.title()) + r'\b': x for x in excepted_strings
