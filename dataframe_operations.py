@@ -372,3 +372,119 @@ def turn_row_into_rows(
     ).reset_index(drop=True)
 
     return df_result
+
+
+def change_rowcolumn_case(
+    df: pd.DataFrame,
+    indexes: list,
+    case: Union[Literal['lower'], Literal['sentence'], Literal['title'], Literal['upper']],
+    axis: Union[Literal[0], Literal[1], Literal['index'], Literal['columns']] = 0,
+    excepted_strings: Optional[list] = None,
+    inplace: bool = True,
+) -> pd.DataFrame:
+    '''
+    Make strings in non-header rows/columns a specified title case, bar
+    certain excepted substrings
+
+    Parameters
+        df: The dataframe to operate on. NB: This does not currently work
+        on dfs with MultiIndexes
+        indexes: A list of rows/columns to operate on, specified by index
+        case: The case to convert to
+        axis: The axis to operate on. If 0 or 'index', operate on rows.
+        If 1 or 'columns', operate on columns
+        excepted_strings: A list of strings to keep upper case
+        inplace: If True, operate on the dataframe in place. If False, return
+        a copy of the dataframe
+
+    Returns
+        df: If inplace, None. Otherwise, the edited dataframe
+
+    Notes
+        excepted_strings only matches full strings, not partial strings
+
+    Future developments
+        Handle dfs with MultiIndexes
+    '''
+
+    # Make a copy of the dataframe if not inplace
+    if not inplace:
+        df = df.copy()
+
+    # Check that axis is valid
+    if axis not in [0, 1, 'index', 'columns']:
+        raise ValueError('axis must be one of 0/1/index/columns')
+
+    # Check that case is valid
+    if case not in ['lower', 'sentence', 'title', 'upper']:
+        raise ValueError('case must be one of lower/upper/title/sentence')
+
+    # Check that excepted_strings is valid
+    if excepted_strings:
+        if not isinstance(excepted_strings, list):
+            raise TypeError('excepted_strings must be a list')
+        if not all(isinstance(x, str) for x in excepted_strings):
+            raise TypeError('all elements of excepted_strings must be strings')
+
+    # Check that indexes is valid
+    if indexes:
+        if not isinstance(indexes, list):
+            raise TypeError('indexes must be a list')
+
+    # Make row/column values specified case
+    if axis in [0, 'index']:
+        df.loc[indexes] = df.loc[indexes, :].apply(
+            lambda x: x.str.lower() if case == 'lower'
+            else x.str.capitalize() if case == 'sentence'
+            else x.str.title() if case == 'title'
+            else x.str.upper() if case == 'upper'
+            else None
+        )
+    elif axis in [1, 'columns']:
+        df.loc[:, indexes] = df.loc[:, indexes].apply(
+            lambda x: x.str.lower() if case == 'lower'
+            else x.str.capitalize() if case == 'sentence'
+            else x.str.title() if case == 'title'
+            else x.str.upper() if case == 'upper'
+            else None
+        )
+
+    # Make exceptions the case supplied
+    # NB: This fixes the case of the exceptions supplied, as they
+    # will have been converted to case in the previous step
+    # NB: This only matches full strings, not partial strings
+    if excepted_strings:
+
+        # Build dictionary of exceptions to correct
+        if case == 'lower':
+            dict_exceptions = {
+                r'\b' + str(x.lower()) + r'\b': x for x in excepted_strings
+            }
+        elif case == 'sentence':
+            dict_exceptions = {
+                r'\b' + str(x.capitalize()) + r'\b': x for x in excepted_strings
+            }
+        elif case == 'title':
+            dict_exceptions = {
+                r'\b' + str(x.title()) + r'\b': x for x in excepted_strings
+            }
+        elif case == 'upper':
+            dict_exceptions = {
+                r'\b' + str(x.upper()) + r'\b': x for x in excepted_strings
+            }
+
+        # Apply exceptions
+        if axis in [0, 'index']:
+            df.iloc[indexes] = df.iloc[indexes].apply(
+                lambda x: x.replace(dict_exceptions, regex=True)
+            )
+        elif axis in [1, 'columns']:
+            df.iloc[:, indexes] = df.iloc[:, indexes].apply(
+                lambda x: x.replace(dict_exceptions, regex=True)
+            )
+
+    # Return results
+    if inplace:
+        return None
+    else:
+        return df
