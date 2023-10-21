@@ -1,10 +1,10 @@
 # !/usr/bin/env python
 # -*- coding: utf-8 -*-
 
-import pandas as pd
-
-from rapidfuzz import process, utils
 from typing import Hashable
+
+import pandas as pd
+from rapidfuzz import process, utils
 
 
 # Define fuzzy matching function
@@ -48,6 +48,10 @@ def fuzzy_match(
                 - The maximum number of matches that can be returned is
                 len(df_left) * limit
     '''
+    # Replace pd.NA with None as rapidfuzz doesn't currently handle pd.NA
+    # Ref: https://github.com/maxbachmann/RapidFuzz/issues/349
+    df_left = df_left.replace({pd.NA: None})
+    df_right = df_right.replace({pd.NA: None})
 
     # Create a series of matches
     # NB: Passing a series to process.extract() yields a series named column_left
