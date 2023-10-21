@@ -47,6 +47,8 @@ def fuzzy_match(
                 tidy dataset
                 - The maximum number of matches that can be returned is
                 len(df_left) * limit
+                - None, np.nan and pd.NA in column_left or column_right are
+                considered not to match with anything
     '''
     # Replace pd.NA with None as rapidfuzz doesn't currently handle pd.NA
     # Ref: https://github.com/maxbachmann/RapidFuzz/issues/349
