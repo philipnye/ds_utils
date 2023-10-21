@@ -228,8 +228,56 @@ def test_multiindex_df_left_and_right():
 
     return
 
+
+def test_df_left_nan():
+    '''
+        Test non-empty, non-MultiIndex df_left, non-empty, non-MultiIndex df_right,
+        where matches exist, df_left contains pd.NA, np.nan and None
+    '''
+
+    # Create dataframes
+    df_left = pd.DataFrame({
+        'col_a': [pd.NA, 'two', float('nan'), 'four', None],
+        'col_b': [1, 2, 3, 4, 5]
+    })
+    df_right = pd.DataFrame({
+        'col_a': ['one', 'too', 'three', 'fours', 'five', 'five'],
+        'col_b': ['a', 'b', 'c', 'd', 'e', 'f']
+    })
+
+    # Use function
+    df_matches = fuzzy_match(
+        df_left,
+        df_right,
+        'col_a',
+        'col_a',
+        score_cutoff=60,
+        limit=2
+    )
+
+    # Add expected output
+    df_expected = pd.DataFrame(
+        index=pd.MultiIndex.from_arrays(
+            [
+                [1, 3],
+                [1, 3],
+            ],
+            names=['df_left_id', 'df_right_id']
+        ),
+        data={
+            'match_string': ['too', 'fours'],
+            'match_score': [66.666667, 88.888889],
+        }
+    )
+
+    # Test output
+    pdt.assert_frame_equal(df_matches, df_expected)
+
+    return
+
+
 def test_clean_strings_false():
-    '''tests/test_fuzzy_match.py
+    '''
         Test non-empty, non-MultiIndex df_left featuring punctuation,
         non-empty, non-MultiIndex df_right, where matches exist,
         clean_strings=False
