@@ -1,7 +1,7 @@
 # !/usr/bin/env python
 # -*- coding: utf-8 -*-
 
-from typing import Hashable
+from typing import Hashable, Literal
 
 import pandas as pd
 from rapidfuzz import process, utils
@@ -38,9 +38,10 @@ def fuzzy_match(
 
             Returns:
                 - df_matches: A dataframe of matches with a MultiIndex
-                consisting of the ids from df_left and df_right, and
-                columns match_string, match_score. Where df_left or
-                df_right has a MultiIndex, the relevant index is a tuple
+                with index names df_left_id and df_right_id, consisting of
+                the ids from df_left and df_right, and columns match_string,
+                match_score. Where df_left or df_right has a MultiIndex,
+                the relevant index is a tuple
 
             Notes:
                 - This adds matches as rows rather than columns, to ensure a
@@ -117,17 +118,18 @@ def fuzzy_merge(
     score_cutoff: int = 90,
     limit: int = 1,
     clean_strings: bool = True,
-    drop_na: bool = True
+    drop_na: bool = True,
+    drop_cols: Literal[None, 'left', 'right', 'both', 'match'] = None,
+    **kwargs
 ):
     '''
         Fuzzy merge two dataframes.
 
             Parameters:
-                - df_left: The base dataframe which we want to find matches
-                for
-                - df_right: The dataframe in which we want to look for matches
-                to values in df_left
-                - column_left, column_right: Columns on which to match
+                - df_left: The base dataframe which we want to merge with df_right
+                - df_right: The dataframe in which we want to merge with df_left
+                - column_left, column_right: Columns on which to match df_left
+                and df_right
                 - score_cutoff: A score below which any matches
                 will be dropped
                 - limit: The number of matches to find for each row
@@ -135,12 +137,30 @@ def fuzzy_merge(
                 - clean_strings: Whether to apply rapidfuzz's default_process
                 processor, which converts strings to lowercase, removes
                 non-alphanumeric characters and trims whitespace
+                - drop_na: Whether to drop rows where no matches are found
+                - drop_cols: Which columns to drop in the output dataframe.
+                Behaviour is as follows:
+                    - None: Drop match_string
+                    - left: Drop columns from df_left and match_string
+                    - right: Drop columns from df_right and match_string
+                    - both: Drop columns from both df_left and df_right and
+                    match_string
+                    - match: Drop match_string, match_score
+                Note that match_string is dropped in all cases as it's the same
+                as column_right
+                - kwargs: Additional arguments to pass to merge()
 
             Returns:
-                - df_matches: A dataframe of matches with a MultiIndex
-                consisting of the ids from df_left and df_right, and
-                columns match_string, match_score. Where df_left or
-                df_right has a MultiIndex, the relevant index is a tuple
+                - df_output: A dataframe of merged data with a MultiIndex
+                with ids from df_left and df_right. Where df_left or
+                df_right has a MultiIndex, the relevant index is a tuple.
+                Columns differ depending on the value of drop_cols, as follows:
+                    - None: match_score, columns from df_left and columns from
+                    df_right
+                    - left: match_score, columns from df_right
+                    - right: match_score, columns from df_left
+                    - both: match_score
+                    - match: columns from df_left and columns from df_right
 
             Notes:
                 - This adds matches as rows rather than columns, to ensure a
@@ -149,6 +169,8 @@ def fuzzy_merge(
                 df_left are retained
                 - The maximum number of matches that can be returned is
                 len(df_left) * limit
+                - None, np.nan and pd.NA in column_left or column_right are
+                considered not to match with anything
     '''
 
     # Fuzzy match datasets
@@ -166,7 +188,7 @@ def fuzzy_merge(
     # Convert indexes to tuples where df_left and/or df_right have MultiIndexes
     # as otherwise any subsequent merging will fail
     # NB: We do this on copies of df_left and/or df_right, and use these in the
-    # # subsequent merge, so that we don't modify the original dataframes
+    # subsequent merge, so that we don't modify the original dataframes
     df_left_flat_index = df_left.copy()
     df_right_flat_index = df_right.copy()
 
@@ -177,17 +199,102 @@ def fuzzy_merge(
         df_right_flat_index.index = pd.MultiIndex.to_flat_index(df_right_flat_index.index)
 
     # Merge data
-    df_output = df_left_flat_index.merge(
-        df_matches,
-        how='left',
-        left_index=True,
-        right_on='df_left_id'
-    ).merge(
-        df_right_flat_index,
-        how='left',
-        left_on='df_right_id',
-        right_index=True,
-        suffixes=['_df_left', '_df_right']
+    # NB: Where drop_na is True or all rows from df_left are matched, the output of the
+    # first merge() operation will have a MultiIndex made up of the indexes of df_left and
+    # df_right. Where there are some unmatched rows from df_left and drop_na is False,
+    # the output, df_interim, will have a single-level index consisting of
+    #   a. a tuple of the indexes of df_left and df_right where a match was found, and
+    #   b. NaNs where no match was found
+    # and df_left_id will have been added as a column
+    # NB: Where we have a single-level index, we replace the index with a MultiIndex
+    # in which NaNs - representing unmatched rows from df_left - are replaced with the
+    # index of df_left and the index of df_right, before proceeding with the merge
+    # NB: x.name accesses the index of the row
+    if drop_na or df_left_flat_index.index.isin(
+        df_matches.index.get_level_values('df_left_id')
+    ).all():
+        df_output = df_left_flat_index.merge(
+            df_matches,
+            how='inner',
+            left_index=True,
+            right_on='df_left_id'
+        ).merge(
+            df_right_flat_index,
+            how='left',
+            left_on='df_right_id',
+            right_index=True,
+            suffixes=['_df_left', '_df_right']
+        )
+    else:
+        df_interim = df_left_flat_index.merge(
+            df_matches,
+            how='outer',
+            left_index=True,
+            right_on='df_left_id'
+        )
+
+        df_interim.index = df_interim.apply(
+            lambda x: (x['df_left_id'], float('NaN')) if pd.isnull(x.name) else x.name,
+            axis=1,
+        )
+
+        df_interim.drop(columns=['df_left_id'], inplace=True)
+
+        df_interim.index = pd.MultiIndex.from_tuples(
+            df_interim.index,
+            names=['df_left_id', 'df_right_id']
+        )
+
+        df_output = df_interim.merge(
+            df_right_flat_index,
+            how='left',
+            left_on='df_right_id',
+            right_index=True,
+            suffixes=['_df_left', '_df_right']
+        )
+
+    # Drop match_string column
+    df_output.drop(columns=['match_string'], inplace=True)
+
+    # Move match_score column to be first column
+    df_output = df_output[
+        ['match_score'] + [col for col in df_output.columns if col != 'match_score']
+    ]
+
+    # Drop columns
+    suffix_left = (
+        '_df_left' if 'suffixes' not in kwargs or kwargs['suffixes'][0] is None
+        else kwargs['suffixes'][0]
     )
+    suffix_right = (
+        '_df_right' if 'suffixes' not in kwargs or kwargs['suffixes'][1] is None else
+        kwargs['suffixes'][1]
+    )
+
+    if drop_cols == 'left':
+        df_output.drop(
+            columns=[col for col in df_output.columns if col.endswith(suffix_left)],
+            inplace=True
+        )
+    elif drop_cols == 'right':
+        df_output.drop(
+            columns=[col for col in df_output.columns if col.endswith(suffix_right)],
+            inplace=True
+        )
+    elif drop_cols == 'both':
+        df_output.drop(
+            columns=[
+                col for col in df_output.columns
+                if col.endswith(suffix_left) or col.endswith(suffix_right)
+            ],
+            inplace=True
+        )
+    elif drop_cols == 'match':
+        df_output.drop(columns=['match_score'], inplace=True)
+    elif drop_cols is not None:
+        raise ValueError(
+            f'Invalid value for drop_cols: {drop_cols}. '
+            'Valid values are None, "left", "right", "both", "match".'
+        )
 
     return df_output
