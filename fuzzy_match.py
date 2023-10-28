@@ -199,6 +199,9 @@ def fuzzy_merge(
         df_right_flat_index.index = pd.MultiIndex.to_flat_index(df_right_flat_index.index)
 
     # Merge data
+    # NB: We need to handle the case where there are no matches, as merging df_left_flat_index
+    # and df_matches where df_matches is empty results in a dataframe featuring df_left_id
+    # but not df_right_id, causing a second merge() operation to fail
     # NB: Where drop_na is True or all rows from df_left are matched, the output of the
     # first merge() operation will have a MultiIndex made up of the indexes of df_left and
     # df_right. Where there are some unmatched rows from df_left and drop_na is False,
@@ -210,7 +213,24 @@ def fuzzy_merge(
     # in which NaNs - representing unmatched rows from df_left - are replaced with the
     # index of df_left and the index of df_right, before proceeding with the merge
     # NB: x.name accesses the index of the row
-    if drop_na or df_left_flat_index.index.isin(
+    if df_matches.empty:
+        df_output = df_left_flat_index.merge(
+            df_matches,
+            how='inner',
+            left_index=True,
+            right_on='df_left_id',
+        ).set_index('df_left_id')
+        df_output = df_output.assign(df_right_id=[]).set_index('df_right_id', append=True)
+
+        # Add '_df_left' to all columns bar match_string, match_score
+        # NB: We're not able to use the suffixes arg of merge() as the fact
+        # there are no matches the suffixes aren't used
+        df_output.columns = [
+            col + '_df_left' if col not in ['match_string', 'match_score'] else col
+            for col in df_output.columns
+        ]
+
+    elif drop_na or df_left_flat_index.index.isin(
         df_matches.index.get_level_values('df_left_id')
     ).all():
         df_output = df_left_flat_index.merge(
