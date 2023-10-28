@@ -198,7 +198,17 @@ def fuzzy_merge(
     if df_right.index.nlevels > 1:
         df_right_flat_index.index = pd.MultiIndex.to_flat_index(df_right_flat_index.index)
 
+    # Create suffixes tuple
+    suffixes = (
+        '_df_left' if 'suffixes' not in kwargs or kwargs['suffixes'][0] is None
+        else kwargs['suffixes'][0],
+        '_df_right' if 'suffixes' not in kwargs or kwargs['suffixes'][1] is None
+        else kwargs['suffixes'][1]
+    )
+
     # Merge data
+    # NB: Where we refer to df_left_id and df_right_id this is possible because fuzzy_match()
+    # applies this naming - suffixes is only used to set subsequent column naming
     # NB: We need to handle the case where there are no matches, as merging df_left_flat_index
     # and df_matches where df_matches is empty results in a dataframe featuring df_left_id
     # but not df_right_id, causing a second merge() operation to fail
@@ -222,11 +232,11 @@ def fuzzy_merge(
         ).set_index('df_left_id')
         df_output = df_output.assign(df_right_id=[]).set_index('df_right_id', append=True)
 
-        # Add '_df_left' to all columns bar match_string, match_score
+        # Add suffix to all columns bar match_string, match_score
         # NB: We're not able to use the suffixes arg of merge() as the fact
-        # there are no matches the suffixes aren't used
+        # there are no matches means the suffixes aren't used
         df_output.columns = [
-            col + '_df_left' if col not in ['match_string', 'match_score'] else col
+            col + suffixes[0] if col not in ['match_string', 'match_score'] else col
             for col in df_output.columns
         ]
 
@@ -243,7 +253,7 @@ def fuzzy_merge(
             how='left',
             left_on='df_right_id',
             right_index=True,
-            suffixes=['_df_left', '_df_right']
+            suffixes=suffixes
         )
     else:
         df_interim = df_left_flat_index.merge(
@@ -270,7 +280,7 @@ def fuzzy_merge(
             how='left',
             left_on='df_right_id',
             right_index=True,
-            suffixes=['_df_left', '_df_right']
+            suffixes=suffixes
         )
 
     # Drop match_string column
@@ -282,30 +292,21 @@ def fuzzy_merge(
     ]
 
     # Drop columns
-    suffix_left = (
-        '_df_left' if 'suffixes' not in kwargs or kwargs['suffixes'][0] is None
-        else kwargs['suffixes'][0]
-    )
-    suffix_right = (
-        '_df_right' if 'suffixes' not in kwargs or kwargs['suffixes'][1] is None else
-        kwargs['suffixes'][1]
-    )
-
     if drop_cols == 'left':
         df_output.drop(
-            columns=[col for col in df_output.columns if col.endswith(suffix_left)],
+            columns=[col for col in df_output.columns if col.endswith(suffixes[0])],
             inplace=True
         )
     elif drop_cols == 'right':
         df_output.drop(
-            columns=[col for col in df_output.columns if col.endswith(suffix_right)],
+            columns=[col for col in df_output.columns if col.endswith(suffixes[1])],
             inplace=True
         )
     elif drop_cols == 'both':
         df_output.drop(
             columns=[
                 col for col in df_output.columns
-                if col.endswith(suffix_left) or col.endswith(suffix_right)
+                if col.endswith(suffixes[0]) or col.endswith(suffixes[1])
             ],
             inplace=True
         )
