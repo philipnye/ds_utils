@@ -94,7 +94,7 @@ def test_no_matches():
     )
 
     # Test output
-    # NB: Note checking index type as the inferred_type differs
+    # NB: Disabling checking of index type as the inferred_type differs
     # here - 'integer' for df_matches and 'empty' for df_expected
     pdt.assert_frame_equal(
         df_matches,
@@ -252,7 +252,6 @@ def test_empty_df():
     df_right = pd.DataFrame({
         'col_a': ['one', 'too', 'three', 'fours', 'five', 'five'],
         'col_b': ['a', 'b', 'c', 'd', 'e', 'f']
-
     })
 
     # Use function
@@ -326,7 +325,7 @@ def test_empty_dfs():
     )
 
     # Test output
-    # NB: Note checking index type as the inferred_type differs
+    # NB: Disabling checking of index type as the inferred_type differs
     # here - 'integer' for df_matches and 'empty' for df_expected
     pdt.assert_frame_equal(
         df_matches,
