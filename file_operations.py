@@ -210,7 +210,6 @@ def read_excel_sheet_name_regex(
 
 
 def log_details(
-    filename: str,
     logs_folder_path: str,
     logs_file_name: str,
     message: str
@@ -233,15 +232,13 @@ def log_details(
 
     # Change directory
     if logs_folder_path is None:
-        raise ValueError('logs_folder_path must be specified where save_logs=True')
-    else:
-        os.chdir(logs_folder_path)
+        raise ValueError('logs_folder_path must be specified where logging is enabled')
 
     # Log details
-    with open(logs_file_name, 'a') as log:
+    with open(logs_folder_path + '/' + logs_file_name, 'a') as log:
         log.write(
             str(pd.Timestamp.now()) + ' - ' +
-            filename + ' ' + message + '\n'
+            message + '\n'
         )
 
     return
@@ -298,15 +295,15 @@ def download_file(
         # Log details if required
         if save_logs:
             log_details(
-                filename, logs_folder_path, logs_file_name,
-                message='downloaded from ' + url
+                logs_folder_path, logs_file_name,
+                message=filename + ' downloaded from ' + url
             )
 
     else:
         if save_logs:
             log_details(
-                filename, logs_folder_path, logs_file_name,
-                message='already exists'
+                logs_folder_path, logs_file_name,
+                message=filename + ' already exists'
             )
 
     return
@@ -492,8 +489,8 @@ def read_spreadsheetflatfile(
     # Log details if required
     if save_logs:
         log_details(
-            filename, logs_folder_path, logs_file_name,
-            message='read'
+            logs_folder_path, logs_file_name,
+            message=filename + ' read'
         )
 
     # Force result to be a dictionary if required
