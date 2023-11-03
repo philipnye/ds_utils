@@ -9,6 +9,8 @@ import urllib.request
 
 import pandas as pd
 
+from logging import log_details
+
 
 def create_folder(path: str) -> None:
     '''
@@ -209,47 +211,12 @@ def read_excel_sheet_name_regex(
     return return_data
 
 
-def log_details(
-    logs_folder_path: str,
-    logs_file_name: str,
-    message: str
-):
-    '''
-        Log details of file actions
-
-        Parameters
-            filename: Name of file
-            logs_folder_path: Path to folder to save log to
-            logs_file_name: Name of log file
-            message: Message to log, along with filename
-
-        Returns
-            None
-
-        Notes
-            None
-    '''
-
-    # Change directory
-    if logs_folder_path is None:
-        raise ValueError('logs_folder_path must be specified where logging is enabled')
-
-    # Log details
-    with open(logs_folder_path + '/' + logs_file_name, 'a') as log:
-        log.write(
-            str(pd.Timestamp.now()) + ' - ' +
-            message + '\n'
-        )
-
-    return
-
-
 def download_file(
     url, data_folder_path,
     rename_data_file=False, new_filename=None,
     overwrite_existing=False, save_logs=False,
     logs_folder_path=None, logs_file_name='download_log.txt'
-):
+) -> None:
     '''
         Download a file from a URL, checking first whether it already
         exists and optionally renaming it, and logging the outcome
