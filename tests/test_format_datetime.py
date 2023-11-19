@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 
 
-import format_datetime as fd
+from utils import format_datetime as fd
 
 
 def test_map_year_month_to_financial_year():
