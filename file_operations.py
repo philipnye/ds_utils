@@ -9,7 +9,7 @@ import urllib.request
 
 import pandas as pd
 
-from logging import log_details
+from log_operations import log_details
 
 
 def create_folder(path: str) -> None:
