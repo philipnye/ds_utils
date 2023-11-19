@@ -51,18 +51,13 @@ def fuzzy_match(
                 - None, np.nan and pd.NA in column_left or column_right are
                 considered not to match with anything
     '''
-    # Replace pd.NA with None as rapidfuzz doesn't currently handle pd.NA
-    # Ref: https://github.com/maxbachmann/RapidFuzz/issues/349
-    df_left = df_left.replace({pd.NA: None})
-    df_right = df_right.replace({pd.NA: None})
-
     # Create a series of matches
     # NB: Passing a series to process.extract() yields a series named column_left
     # where the index is the index of df_left and the values are lists of tuples,
     # of the form [(<value>, <score>, <index>), ...] - in this case the match
     # value from df_right, the match score and index of df_right. Where df_right
     # has a MultiIndex, the index is a tuple
-    # (ref: https://stackoverflow.com/a/63725864/4659442)
+    # Ref: https://stackoverflow.com/a/63725864/4659442
     series_matches = df_left[column_left].apply(
         lambda x: process.extract(
             x, df_right[column_right],
