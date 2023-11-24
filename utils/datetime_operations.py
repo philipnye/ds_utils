@@ -3,6 +3,29 @@
 
 from typing import Union
 
+import pandas as pd
+
+
+def convert_date_string_to_period(item: str) -> pd.Period:
+    '''
+        Converts a date string to a pandas period object
+
+        Parameters
+            - item: a date string in the format YYYY-MM-DD
+
+        Returns
+            - a pandas period object
+
+        Notes
+            None
+    '''
+
+    year = int(item[: 4])
+    month = int(item[5: 7])
+    day = int(item[8: 10])
+
+    return pd.Period(year=year, month=month, day=day, freq='D')
+
 
 def map_month_to_number(month, padded=False):
     '''
