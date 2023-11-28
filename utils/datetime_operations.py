@@ -6,6 +6,28 @@ from typing import Union
 import pandas as pd
 
 
+def convert_academicfinancial_year_string_to_year_string(year: str) -> str:
+    '''
+    Convert a financial or academic year string to a year string
+
+    Parameters
+        - year: A string representing a financial or academic year
+
+    Returns
+        - formatted_year: A string representing a year
+
+    Notes
+        - The year returned is the end year of the financial or academic year
+        - See related convert_year_string_to_academicfinancial_year_string()
+    '''
+    if len(str(year)) == 6:
+        formatted_year = str(year)[:4]
+    elif len(str(year)) == 7:
+        formatted_year = str(year)[:4]
+
+    return formatted_year
+
+
 def convert_date_string_to_period(item: str) -> pd.Period:
     '''
         Converts a date string to a pandas period object
@@ -25,6 +47,39 @@ def convert_date_string_to_period(item: str) -> pd.Period:
     day = int(item[8: 10])
 
     return pd.Period(year=year, month=month, day=day, freq='D')
+
+
+def convert_year_string_to_academicfinancial_year_string(
+    year: str,
+    sep: str
+) -> str:
+    '''
+    Convert a year string from one format to another
+
+    Parameters
+        - year: A string representing a year
+
+    Returns
+        - formatted_year: A string representing a year in a different format
+
+    Notes
+        - Where year is a calendar year, the academic year or financial returned
+        is the one which ends in the calendar year
+        - See related convert_academicfinancial_year_string_to_year_string()
+    '''
+    if sep is None:
+        sep = ''
+
+    if year.year:
+        formatted_year = str(year.year - 1) + '-' + str(year.year)[-2:]
+    elif len(str(year)) == 4:
+        formatted_year = str(year - 1) + sep + str(year)[-2:]
+    elif len(str(year)) == 6:
+        formatted_year = str(year)[:4] + sep + str(year)[-2:]
+    elif len(str(year)) == 7:
+        formatted_year = str(year)[:4] + sep + str(year)[-2:]
+
+    return formatted_year
 
 
 def map_month_to_number(month, padded=False):
