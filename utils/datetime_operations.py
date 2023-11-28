@@ -17,7 +17,7 @@ def convert_date_string_to_period(item: str) -> pd.Period:
             - a pandas period object
 
         Notes
-            None
+            - Ref: https://calmcode.io/til/pandas-timerange.html
     '''
 
     year = int(item[: 4])
