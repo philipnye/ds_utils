@@ -22,9 +22,9 @@ def strip_name_title(
 
     # Remove titles
     if name.partition(' ')[0] in [
-        'Dr', 'Hon',
         'Miss', 'Mr', 'Mrs', 'Ms',
-        'Prof', 'Sir', 'The',
+        'Dame', 'Sir',
+        'Dr', 'Hon', 'Prof', 'The',
     ]:
         name = name.partition(' ')[2]
 
