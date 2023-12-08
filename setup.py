@@ -25,19 +25,19 @@ class CleanCommand(setuptools.Command):
         pass
 
     def run(self):
-        if os.path.isdir("./utils.egg-info"):
-            shutil.rmtree("./utils.egg-info")
+        if os.path.isdir("./ds_utils.egg-info"):
+            shutil.rmtree("./ds_utils.egg-info")
 
 
 setuptools.setup(
-    name='utils',
-    version="1.0.0",
+    name='ds_utils',
+    version="2.0.0",
     author="Philip Nye",
     author_email="philipnye@users.noreply.github.com",
-    description="A collection of Python functions to solve common challenges.",
+    description="A collection of Python functions to execute common data science operations.",
     long_description=long_description,
     long_description_content_type="text/markdown",
-    url="https://github.com/philipnye/utils",
+    url="https://github.com/philipnye/ds_utils",
     packages=setuptools.find_packages(),
     classifiers=[
         "Programming Language :: Python :: 3",
