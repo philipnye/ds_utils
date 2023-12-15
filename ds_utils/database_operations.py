@@ -4,7 +4,7 @@
 import urllib
 from typing import Optional
 
-from sqlalchemy import create_engine, engine
+from sqlalchemy import create_engine, engine, exc
 
 
 def connect_sql_db(
@@ -49,3 +49,30 @@ def connect_sql_db(
     engine = create_engine(connection_string)
 
     return engine
+
+
+def retry_sql_query(
+    function: str,
+    query: str,
+    **kwargs: object
+) -> object:
+    """
+    Attempt to execute a SQL query, retrying if a DBAPIError is raised
+
+    Parameters
+        - function: Function to use to query the database
+        - query: SQL query to execute
+        - **kwargs: Keyword arguments to pass to the function
+
+    Returns
+        - result: Result of the query
+
+    Notes
+        - None
+    """
+    try:
+        result = function(query, **kwargs)
+    except exc.DBAPIError:
+        result = function(query, **kwargs)
+
+    return result
