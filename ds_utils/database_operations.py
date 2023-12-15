@@ -4,7 +4,7 @@
 import urllib
 from typing import Optional
 
-from sqlalchemy import create_engine
+from sqlalchemy import create_engine, engine
 
 
 def connect_sql_db(
@@ -15,7 +15,7 @@ def connect_sql_db(
     username: str,
     dialect: str = 'mssql',
     driver: str = 'pyodbc',
-):
+) -> engine.base.Engine:
     """
     Connect to a SQL database using the supplied parameters
 
