@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 
 import urllib
-from typing import Optional
+from typing import Callable, Optional
 
 from sqlalchemy import create_engine, engine, exc
 
@@ -52,7 +52,7 @@ def connect_sql_db(
 
 
 def retry_sql_query(
-    function: str,
+    function: Callable,
     query: str,
     **kwargs: object
 ) -> object:
