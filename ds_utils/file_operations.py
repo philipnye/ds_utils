@@ -4,7 +4,7 @@
 import inspect
 import os
 import re
-from typing import Callable, Literal, Optional, Union
+from typing import Any, Callable, Literal, Optional, Union
 import urllib.request
 
 import pandas as pd
@@ -580,3 +580,28 @@ def read_datestamped_data_file(
             print('Read:\n' + '\n'.join(files_to_read))
 
     return return_data
+
+
+def read_sheet_names(
+    file: Any
+) -> list[str]:
+    """
+    Takes an input file and returns a list of sheet names
+
+    Parameters:
+        - file: A file that's been read in via
+        streamlit's file_uploader
+
+    Returns:
+        - sheet_names: A list of sheet names
+
+    Notes:
+        - file can we any object that read_excel() can read
+        - For files containing large amounts of data this can significantly
+        increase the speed of reading sheet names
+        Ref: https://stackoverflow.com/a/77771116/4659442
+
+    """
+    sheet_names = list(pd.read_excel(file, sheet_name=None, nrows=0).keys())
+
+    return sheet_names
