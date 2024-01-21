@@ -5,7 +5,7 @@
 import pandas as pd
 import pandas.testing as pdt
 
-from utils import datetime_operations as do
+from ds_utils import datetime_operations as do
 
 
 def test_calculate_date_string_end_date():

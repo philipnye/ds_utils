@@ -5,7 +5,7 @@ import pandas as pd
 import pandas.testing as pdt
 import pytest
 
-from utils.fuzzy_match import fuzzy_match
+from ds_utils.fuzzy_match import fuzzy_match
 
 
 def test_simple_case():
