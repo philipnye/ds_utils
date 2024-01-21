@@ -5,9 +5,9 @@ import inspect
 import os
 import re
 from typing import Any, Callable, Literal, Optional, Union
-import urllib.request
 
 import pandas as pd
+import urllib.request
 
 from ds_utils.log_operations import log_details
 
