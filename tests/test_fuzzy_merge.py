@@ -1,6 +1,7 @@
 # !/usr/bin/env python
 # -*- coding: utf-8 -*-
 
+import numpy as np
 import pandas as pd
 import pandas.testing as pdt
 import pytest
@@ -117,7 +118,7 @@ def test_df_left_nan():
 
     # Create dataframes
     df_left = pd.DataFrame({
-        'col_a': [pd.NA, 'two', float('nan'), 'four', None],
+        'col_a': [pd.NA, 'two', np.NaN, 'four', None],
         'col_b': [1, 2, 3, 4, 5]
     })
     df_right = pd.DataFrame({
@@ -171,7 +172,7 @@ def test_df_right_nan():
         'col_b': [1, 2, 3, 4, 5]
     })
     df_right = pd.DataFrame({
-        'col_a': [pd.NA, 'too', float('nan'), 'fours', None, 'five'],
+        'col_a': [pd.NA, 'too', np.NaN, 'fours', None, 'five'],
         'col_b': ['a', 'b', 'c', 'd', 'e', 'f']
     })
 
@@ -659,18 +660,18 @@ def test_drop_na_false():
         index=pd.MultiIndex.from_arrays(
             [
                 [0, 1, 2, 3, 4, 4],
-                [0.0, pd.NA, 2.0, 3.0, 4.0, 5.0],
+                [0.0, np.NaN, 2.0, 3.0, 4.0, 5.0],
             ],
             names=['df_left_id', 'df_right_id']
         ),
         data={
             'match_score': pd.to_numeric(
-                [100.000000, pd.NA, 100.000000, 88.888889, 100.000000, 100.000000]
+                [100.000000, np.NaN, 100.000000, 88.888889, 100.000000, 100.000000]
             ),
             'col_a_df_left': ['one', 'two', 'three', 'four', 'five', 'five'],
             'col_b_df_left': pd.to_numeric([1, 2, 3, 4, 5, 5]),
-            'col_a_df_right': ['one', pd.NA, 'three', 'fours', 'five', 'five'],
-            'col_b_df_right': ['a', pd.NA, 'c', 'd', 'e', 'f'],
+            'col_a_df_right': ['one', np.NaN, 'three', 'fours', 'five', 'five'],
+            'col_b_df_right': ['a', np.NaN, 'c', 'd', 'e', 'f'],
         }
     )
 
