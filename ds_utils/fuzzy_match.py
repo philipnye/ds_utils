@@ -1,10 +1,10 @@
 # !/usr/bin/env python
 # -*- coding: utf-8 -*-
 
-from typing import Hashable, Literal
+from typing import Any, Callable, Hashable, Literal, Optional
 
 import pandas as pd
-from rapidfuzz import process, utils
+from rapidfuzz import fuzz, process, utils
 
 
 # Define fuzzy matching function
@@ -17,6 +17,8 @@ def fuzzy_match(
     limit: int = 1,
     clean_strings: bool = True,
     drop_na: bool = True,
+    scorer: Callable = fuzz.WRatio,
+    scorer_kwargs: dict[str, Any] = {},
 ) -> pd.DataFrame:
     '''
         Fuzzy match two dataframes.
@@ -35,6 +37,8 @@ def fuzzy_match(
                 processor, which converts strings to lowercase, removes
                 non-alphanumeric characters and trims whitespace
                 - drop_na: Whether to drop rows where no matches are found
+                - scorer: The scorer to use for fuzzy matching
+                - scorer_kwargs: Keyword arguments to pass to scorer
 
             Returns:
                 - df_matches: A dataframe of matches with a MultiIndex
@@ -60,9 +64,13 @@ def fuzzy_match(
     # Ref: https://stackoverflow.com/a/63725864/4659442
     series_matches = df_left[column_left].apply(
         lambda x: process.extract(
-            x, df_right[column_right],
-            limit=limit, score_cutoff=score_cutoff,
-            processor=utils.default_process if clean_strings else None
+            x,
+            df_right[column_right],
+            limit=limit,
+            score_cutoff=score_cutoff,
+            processor=utils.default_process if clean_strings else None,
+            scorer=scorer,
+            **scorer_kwargs
         )
     )
 
@@ -115,7 +123,9 @@ def fuzzy_merge(
     clean_strings: bool = True,
     drop_na: bool = True,
     drop_cols: Literal[None, 'left', 'right', 'both', 'match'] = None,
-    **kwargs
+    scorer: Callable = fuzz.WRatio,
+    scorer_kwargs: dict[str, Any] = {},
+    suffixes: tuple[Optional[str], Optional[str]] = ('_df_left', '_df_right'),
 ):
     '''
         Fuzzy merge two dataframes.
@@ -143,7 +153,9 @@ def fuzzy_merge(
                     - match: Drop match_string, match_score
                 Note that match_string is dropped in all cases as it's the same
                 as column_right
-                - kwargs: Additional arguments to pass to merge()
+                - scorer: The scorer to use for fuzzy matching
+                - scorer_kwargs: Keyword arguments to pass to scorer
+                - suffixes: Suffixes to add to columns from df_left and df_right
 
             Returns:
                 - df_output: A dataframe of merged data with a MultiIndex
@@ -177,7 +189,9 @@ def fuzzy_merge(
         score_cutoff=score_cutoff,
         limit=limit,
         clean_strings=clean_strings,
-        drop_na=drop_na
+        drop_na=drop_na,
+        scorer=scorer,
+        scorer_kwargs=scorer_kwargs,
     )
 
     # Convert indexes to tuples where df_left and/or df_right have MultiIndexes
@@ -192,14 +206,6 @@ def fuzzy_merge(
         df_left_flat_index.index.name = 'df_left_id'
     if df_right.index.nlevels > 1:
         df_right_flat_index.index = pd.MultiIndex.to_flat_index(df_right_flat_index.index)
-
-    # Create suffixes tuple
-    suffixes = (
-        '_df_left' if 'suffixes' not in kwargs or kwargs['suffixes'][0] is None
-        else kwargs['suffixes'][0],
-        '_df_right' if 'suffixes' not in kwargs or kwargs['suffixes'][1] is None
-        else kwargs['suffixes'][1]
-    )
 
     # Merge data
     # NB: Where we refer to df_left_id and df_right_id this is possible because fuzzy_match()
