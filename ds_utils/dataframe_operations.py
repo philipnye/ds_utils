@@ -6,6 +6,52 @@ from typing import Literal, Optional, Union
 import pandas as pd
 
 
+def count_column_nulls(
+    df: pd.DataFrame,
+    groupby: Optional[list[str]] = None,
+    transpose: bool = False,
+    percent: bool = False,
+    format: Optional[str] = None,
+) -> pd.DataFrame:
+    '''
+    Count the number of nulls in each column of a datagrame
+
+    Parameters
+        - df: The dataframe to operate on
+        - groupby: A column in df on which to group results
+        - transpose: If True, df column names are row indexes. If False,
+        df column names are columns
+
+    Returns
+        - df_nulls: Counts of the number of nulls in each row
+
+    Notes
+        - Where groupby is not supplied we invert transpose, as df_nulls starts
+        off in long/transposed form as it has been created from a Series
+    '''
+
+    if not groupby:
+        if not percent:
+            df_nulls = df.apply(lambda x: x.isnull().sum()).to_frame()
+            transpose = not transpose
+        else:
+            df_nulls = df.apply(lambda x: x.isnull().mean()).to_frame()
+            transpose = not transpose
+    else:
+        if not percent:
+            df_nulls = df.groupby(groupby).apply(lambda x: x.isnull().sum())
+        else:
+            df_nulls = df.groupby(groupby).apply(lambda x: x.isnull().mean())
+
+    if format:
+        df_nulls = df_nulls.applymap(format.format)
+
+    if transpose:
+        return df_nulls.T
+    else:
+        return df_nulls
+
+
 def identify_first_numeric(
     df: pd.DataFrame,
     axis: Union[Literal[0], Literal[1], Literal['index'], Literal['columns']] = 0,
