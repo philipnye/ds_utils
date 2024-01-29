@@ -21,6 +21,9 @@ def count_column_nulls(
         - groupby: A column in df on which to group results
         - transpose: If True, df column names are row indexes. If False,
         df column names are columns
+        - percent: If True, return the percentage of nulls in each column. If
+        False, return the count of nulls in each column
+        - format: A format string to apply to the results
 
     Returns
         - df_nulls: Counts of the number of nulls in each row
@@ -44,7 +47,7 @@ def count_column_nulls(
             df_nulls = df.groupby(groupby).apply(lambda x: x.isnull().mean())
 
     if format:
-        df_nulls = df_nulls.applymap(format.format)
+        df_nulls = df_nulls.map(format.format)
 
     if transpose:
         return df_nulls.T
