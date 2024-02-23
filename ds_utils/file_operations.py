@@ -97,7 +97,7 @@ def extract_filetype(
         return filetype
 
 
-def get_sheet_info(file_path: str, filename: str, file_ending: str) -> dict():
+def get_sheet_info(file_path: str, filename: str, file_ending: str) -> dict:
     '''
         Get information about sheets in a file
 
