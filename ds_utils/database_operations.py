@@ -15,6 +15,8 @@ def connect_sql_db(
     username: str,
     dialect: str = 'mssql',
     driver: str = 'pyodbc',
+    fast_executemany: Optional[bool] = True,
+    **kwargs: object
 ) -> engine.base.Engine:
     """
     Connect to a SQL database using the supplied parameters
@@ -46,7 +48,7 @@ def connect_sql_db(
         )
 
     # Create SQLAlchemy engine
-    engine = create_engine(connection_string)
+    engine = create_engine(connection_string, fast_executemany=fast_executemany, **kwargs)
 
     return engine
 
