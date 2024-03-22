@@ -53,17 +53,18 @@ def connect_sql_db(
     return engine
 
 
-def retry_sql_query(
+def retry_sql_function(
     function: Callable,
-    query: str,
+    *args: object,
     **kwargs: object
 ) -> object:
     """
-    Attempt to execute a SQL query, retrying if a DBAPIError is raised
+    Attempt to execute a function involving a database connection,
+    retrying if a DBAPIError is raised
 
     Parameters
         - function: Function to use to query the database
-        - query: SQL query to execute
+        - *args: Arguments to pass to the function
         - **kwargs: Keyword arguments to pass to the function
 
     Returns
@@ -73,8 +74,8 @@ def retry_sql_query(
         - None
     """
     try:
-        result = function(query, **kwargs)
+        result = function(*args, **kwargs)
     except exc.DBAPIError:
-        result = function(query, **kwargs)
+        result = function(*args, **kwargs)
 
     return result
