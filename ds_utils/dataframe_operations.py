@@ -119,6 +119,37 @@ def identify_first_numeric(
     return header_count
 
 
+def identify_row_differences(
+    df1: pd.DataFrame,
+    df2: pd.DataFrame,
+    **kwargs,
+) -> pd.DataFrame:
+    '''
+    Identify rows in df2 that are not in df1
+
+    Parameters
+        df1: The first dataframe to compare
+        df2: The second dataframe to compare
+        **kwargs: Additional arguments to pass to the compare function
+
+    Returns
+        df_diff: A dataframe containing the differences between the two dataframes
+
+    Notes
+        None
+    '''
+
+    # Compare dataframes
+    df_diff = df1.merge(
+        df2,
+        **kwargs
+    ).loc[
+        lambda x: x['_merge'] == 'right_only'
+    ].drop(columns='_merge')
+
+    return df_diff
+
+
 def create_default_header_names(
     header_count: int,
     axis: Union[Literal[0], Literal[1], Literal['index'], Literal['columns']] = 0,
