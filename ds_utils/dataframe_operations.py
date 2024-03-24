@@ -122,6 +122,9 @@ def identify_first_numeric(
 def identify_row_differences(
     df1: pd.DataFrame,
     df2: pd.DataFrame,
+    keep_rows: Union[Literal['both'], Literal['first'], Literal['second']] = 'second',
+    indicator_values: Optional[list] = None,
+    drop_indicator_column: bool = True,
     **kwargs,
 ) -> pd.DataFrame:
     '''
@@ -130,6 +133,12 @@ def identify_row_differences(
     Parameters
         df1: The first dataframe to compare
         df2: The second dataframe to compare
+        keep_rows: Which rows to keep. If 'both', returns rows in the first
+        and the second dataframe which differ. If 'first', returns rows in
+        the first dataframe which are not in the second dataframe. If 'second',
+        returns rows in the second dataframe which are not in the first dataframe
+        indicator_values: A list of values to use for the indicator column
+        drop_indicator_column: If True, drop the merge column
         **kwargs: Additional arguments to pass to the compare function
 
     Returns
@@ -142,10 +151,37 @@ def identify_row_differences(
     # Compare dataframes
     df_diff = df1.merge(
         df2,
+        indicator=True,
         **kwargs
-    ).loc[
-        lambda x: x['_merge'] == 'right_only'
-    ].drop(columns='_merge')
+    )
+
+    # Keep rows
+    if keep_rows == 'both':
+        df_diff = df_diff.loc[
+            (df_diff['_merge'] == 'left_only') |
+            (df_diff['_merge'] == 'right_only')
+        ]
+    elif keep_rows == 'first':
+        df_diff = df_diff.loc[
+            df_diff['_merge'] == 'left_only'
+        ]
+    elif keep_rows == 'second':
+        df_diff = df_diff.loc[
+            df_diff['_merge'] == 'right_only'
+        ]
+    else:
+        raise ValueError('keep_rows must be one of both/first/second')
+
+    # Re-map indicator values
+    if indicator_values:
+        df_diff['_merge'] = df_diff['_merge'].map({
+            'left_only': indicator_values[0],
+            'right_only': indicator_values[1]
+        })
+
+    # Drop merge column
+    if drop_indicator_column:
+        df_diff = df_diff.drop(columns='_merge')
 
     return df_diff
 
