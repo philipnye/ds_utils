@@ -51,7 +51,9 @@ def calculate_date_string_end_date(
             None
         '''
 
-        if (
+        if len(date_str) == 4:
+            date_format = '%Y'
+        elif (
             len(date_str) == 7 and
             '/' in date_str and
             len(date_str.split('/')[0]) == 4 and
