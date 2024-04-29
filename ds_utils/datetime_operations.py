@@ -264,9 +264,7 @@ def convert_year_string_to_academicfinancial_year_string(
     if sep is None:
         sep = ''
 
-    if year.year:
-        formatted_year = str(year.year - 1) + '-' + str(year.year)[-2:]
-    elif len(str(year)) == 4:
+    if len(str(year)) == 4:
         formatted_year = str(year - 1) + sep + str(year)[-2:]
     elif len(str(year)) == 6:
         formatted_year = str(year)[:4] + sep + str(year)[-2:]
