@@ -270,6 +270,8 @@ def convert_year_string_to_academicfinancial_year_string(
         formatted_year = str(year)[:4] + sep + str(year)[-2:]
     elif len(str(year)) == 7:
         formatted_year = str(year)[:4] + sep + str(year)[-2:]
+    elif type(year) is pd.Timestamp:
+        formatted_year = str(year.year - 1) + sep + str(year.year)[-2:]
 
     return formatted_year
 
