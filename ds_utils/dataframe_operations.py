@@ -55,6 +55,65 @@ def count_column_nulls(
         return df_nulls
 
 
+def flatten_nested_json_columns(df):
+    """
+    Flatten nested JSON in a DataFrame.
+
+    Parameters:
+        - df: DataFrame with nested JSON
+
+    Returns:
+        - df: DataFrame with flattened JSON
+
+    Notes
+        - This is an edited version of https://stackoverflow.com/a/61269285/4659442:
+            - Renamed
+            - Replaced all() is replaced with any(). This fixes a bug, whereby
+            the function doesn't explode/normalize a column if there's one or more
+            NaNs in it. It does rely on columns not containing a mix of types, however
+            - Intermediate 'index' column dropped before return
+
+    """
+    df = df.reset_index()
+
+    # Search for columns to explode/flatten
+    s = (df.map(type) == list).any()
+    list_columns = s[s].index.tolist()
+
+    s = (df.map(type) == dict).any()
+    dict_columns = s[s].index.tolist()
+
+    while len(list_columns) > 0 or len(dict_columns) > 0:
+        new_columns = []
+
+        # Explode dictionaries horizontally, adding new columns
+        for col in dict_columns:
+            horiz_exploded = pd.json_normalize(df[col]).add_prefix(f'{col}.')
+            horiz_exploded.index = df.index
+            df = pd.concat([df, horiz_exploded], axis=1).drop(columns=[col])
+            new_columns.extend(horiz_exploded.columns)
+
+        # Explode lists vertically, adding new columns
+        for col in list_columns:
+            df = df.drop(columns=[col]).join(df[col].explode().to_frame())
+
+            # Prevent combinatorial explosion when multiple
+            # cols have lists or lists of lists
+            df = df.reset_index(drop=True)
+            new_columns.append(col)
+
+        # check if there are still dict o list fields to flatten
+        s = (df[new_columns].map(type) == list).any()
+        list_columns = s[s].index.tolist()
+
+        s = (df[new_columns].map(type) == dict).any()
+        dict_columns = s[s].index.tolist()
+
+    df.drop(columns=['index'], inplace=True)
+
+    return df
+
+
 def identify_first_numeric(
     df: pd.DataFrame,
     axis: Union[Literal[0], Literal[1], Literal['index'], Literal['columns']] = 0,
