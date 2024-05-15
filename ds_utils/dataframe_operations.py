@@ -469,6 +469,218 @@ def check_number_rowscolumns(
     return result
 
 
+def turn_column_into_columns_values(
+    df: pd.DataFrame,
+    column: int,
+    values: list[list],
+    missing_values: Optional[list] = None,
+    column_names: Optional[list] = None,
+    strict: bool = True,
+) -> pd.DataFrame:
+    '''
+    Turn a column into multiple columns, allocating values into specific columns
+
+    Parameters
+        - df: The dataframe to operate on
+        - column: The column to split, which can be either an index or a non-index column
+        - values: The values to split on, with these values ffilled to subsequent rows.
+        The number of lists should be equal to the number of columns to split into. None
+        is used as a catchall for all values that aren't otherwise specified
+        - missing_values: The values to use - generally for totals - where the original
+        shape of the data means no value is present
+        - column_names: The names to use for the new columns
+        - strict: If True, raise an error if the values are not in the column
+
+    Returns
+        - df: The dataframe with:
+            - The column turned into a MultiIndex where column begins as an index column
+            - The column split into multiple (non-index) columns where column begins
+            as a column
+
+    Notes
+        - strict=False option not yet implemented
+        - Only one catchall value can be supplied, and it can only be used for the
+        last of the new columns
+        - Newly created columns are added to the start of the df
+
+    Future developments
+        - TODO: Test whether this functions as expected where:
+            - df has an index and column is not part of the index
+            - column is part of a MultiIndex
+        - TODO: Fix handling of things with a header row MultiIndex. As
+        currently implemented this probably leads to levels other than the
+        first being dropped (see TODO flag below)
+        - Implement strict=False option, or remove strict argument
+    '''
+
+    # Convert index column to column where that's the column we want to operate on
+    # NB: This is done so the rest of the function can operate either on something
+    # that starts as an index column or otherwise
+    if column in df.index.names:
+        index_column_converted = True
+
+        # Stash header row names
+        if df.columns.names:
+            header_row_names = df.columns.names
+
+        df = df.reset_index()
+    else:
+        index_column_converted = False
+
+    # Check if values all appear in column
+    # NB: The use of any() isn't strictly necessary, but it runs faster
+    # than the code does without it
+    # NB: Nones - which occur where we've supplied a catchall case - are removed
+    # before checking
+    if strict and not all(
+        any(item in x for x in df.loc[:, column].values)
+        for item in [item for sublist in values for item in sublist if item is not None]
+    ):
+        raise ValueError(f'values {values} not in column {column}')
+    elif not strict:
+        raise NotImplementedError('strict=False not yet implemented')
+
+    # Check that only one catchall value is supplied
+    if values.count([None]) > 1:
+        raise ValueError('only one catchall value can be supplied')
+
+    # Check that catchall value is last
+    if values.count([None]) == 1 and values[-1] != [None]:
+        raise ValueError('catchall value must be last in list')
+
+    # Duplicate columns into new df
+    if not column_names:
+        column_names = [f'column_{i}' for i in range(len(values))]
+    df_new_columns = pd.concat(
+        [df.loc[:, column]] * len(values),
+        axis=1,
+        ignore_index=True
+    ).set_axis(labels=column_names, axis=1)
+
+    # Set values to NaN where they're not in the list of values for each column
+    # NB: inplace=True doesn't work on where() here
+    # NB: This relies on our catchall case being the last column -
+    # without that our isna() condition won't work
+    for i, sublist in enumerate(values):
+
+        # Handle normal case
+        if sublist != [None]:
+            df_new_columns[
+                column_names[i]
+            ] = df_new_columns[
+                column_names[i]
+            ].where(df_new_columns[column_names[i]].isin(sublist))
+
+        # Handle catchall case - retaining all values not specified as belonging
+        # in a different column
+        else:
+            other_columns = [c for c in df_new_columns.columns if c != column_names[i]]
+            df_new_columns[
+                column_names[i]
+            ] = df_new_columns[
+                column_names[i]
+            ].where(
+                df_new_columns[other_columns].isna().all(axis=1)
+            )
+
+    # Forward fill
+    # NB: Can't use inplace=True as we're operating on selected columns only
+    df_new_columns[other_columns] = df_new_columns[other_columns].ffill()
+
+    # Supply missing values
+    for i, value in enumerate(missing_values):
+        if value is not None:
+            df_new_columns[column_names[i]] = df_new_columns[column_names[i]].fillna(value)
+
+    # Create copy of original dataframe
+    # NB: We do this in order to safely drop the original column
+    df_result = df.copy()
+
+    # Drop original column
+    df_result.drop(column, axis=1, inplace=True)
+
+    # Prepend new columns and set column names
+    # TODO: Fix handling of things with a header row MultiIndex
+    df_result = pd.concat(
+        [df_new_columns, df_result],
+        ignore_index=True,
+        axis=1
+    ).reset_index(drop=True).set_axis(
+        labels=[c for c in df_new_columns.columns] + [
+            c[0] if isinstance(c, tuple)
+            else c
+            for c in df_result.columns
+        ],
+        axis=1
+    )
+
+    # Convert back to index columns if that's what we started with
+    if index_column_converted:
+        df_result.set_index(column_names, inplace=True)
+
+        # Reapply header row names
+        df_result.columns.names = header_row_names
+
+    return df_result
+
+
+def turn_column_into_columns(
+    df: pd.DataFrame,
+    column: int,
+    split_by: Union[Union[Literal['sep']], Literal['values']] = 'values',
+    sep: Optional[bool] = None,
+    values: Optional[list[list]] = None,
+    missing_values: Optional[list] = None,
+    column_names: Optional[list] = None,
+    strict: bool = True,
+) -> pd.DataFrame:
+    '''
+    Turn a column into multiple columns, either splitting on a separator or by allocating
+    values into specific columns
+
+    Parameters
+        df: The dataframe to operate on
+        column: The column to split
+        split_by: If 'values', split by values. If 'sep', split by separator
+        sep: The separator to split on
+        values: The values to split on
+        missing_values: The values to use - generally for totals - where the original
+        column_names: The names to use for the new columns
+        strict: If True, raise an error if the separator/values are not in the column
+
+    Returns
+        df: The dataframe with the column split into multiple columns
+
+    Notes
+        - 'sep' option not yet implemented
+        - See related turn_row_into_rows()
+
+    Future developments
+        - Implement 'sep' option
+    '''
+    # Check that split_by is valid
+    if split_by not in ['values', 'sep']:
+        raise ValueError('split_by must be one of values/sep')
+
+    # Check if sep or values has been supplied
+    if split_by == 'sep' and not sep:
+        raise ValueError('sep must be supplied if split_by is sep')
+    if split_by == 'values' and not values:
+        raise ValueError('values must be supplied if split_by is values')
+
+    if split_by == 'sep':
+        raise NotImplementedError("split_by='sep' not yet implemented")
+    elif split_by == 'values':
+        return turn_column_into_columns_values(
+            df=df,
+            column=column,
+            values=values,
+            missing_values=missing_values,
+            column_names=column_names,
+            strict=strict,
+        )
+
+
 def turn_row_into_rows(
     df: pd.DataFrame,
     row: int,
@@ -540,7 +752,7 @@ def turn_row_into_rows(
     # Drop original row
     df_result.drop(row, axis=0, inplace=True)
 
-    # Append new rows
+    # Prepend new rows
     df_result = pd.concat(
         [df_new_rows, df_result],
         ignore_index=True
