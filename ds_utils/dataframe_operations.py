@@ -509,6 +509,7 @@ def turn_column_into_columns_values(
         - TODO: Fix handling of things with a header row MultiIndex. As
         currently implemented this probably leads to levels other than the
         first being dropped (see TODO flag below)
+        - TODO: Change ffilling so that things are only ffilled within their group
         - Implement strict=False option, or remove strict argument
     '''
 
