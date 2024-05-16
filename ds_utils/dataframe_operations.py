@@ -522,6 +522,10 @@ def turn_column_into_columns_values(
         # Identify column position
         column_position = df.index.names.index(column)
 
+        # Identify index columns before and after column we're operating on
+        index_columns_before = df.index.names[:column_position]
+        index_columns_after = df.index.names[column_position+1:]
+
         # Stash header row names
         if df.columns.names:
             header_row_names = df.columns.names
@@ -636,7 +640,10 @@ def turn_column_into_columns_values(
 
     # Convert back to index columns if that's what we started with
     if index_column_converted:
-        df_result.set_index(column_names, inplace=True)
+        df_result.set_index(
+            index_columns_before + column_names + index_columns_after,
+            inplace=True
+        )
 
         # Reapply header row names
         df_result.columns.names = header_row_names
