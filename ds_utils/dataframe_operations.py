@@ -501,7 +501,6 @@ def turn_column_into_columns_values(
         - strict=False option not yet implemented
         - Only one catchall value can be supplied, and it can only be used for the
         last of the new columns
-        - Newly created columns are added to the start of the df
 
     Future developments
         - TODO: Test whether this functions as expected where:
@@ -519,6 +518,9 @@ def turn_column_into_columns_values(
     if column in df.index.names:
         index_column_converted = True
 
+        # Identify column position
+        column_position = df.index.names.index(column)
+
         # Stash header row names
         if df.columns.names:
             header_row_names = df.columns.names
@@ -526,6 +528,7 @@ def turn_column_into_columns_values(
         df = df.reset_index()
     else:
         index_column_converted = False
+        column_position = df.columns.get_loc(column)
 
     # Check if values all appear in column
     # NB: The use of any() isn't strictly necessary, but it runs faster
@@ -599,18 +602,34 @@ def turn_column_into_columns_values(
     # Drop original column
     df_result.drop(column, axis=1, inplace=True)
 
+    # Split dataframe into columns before and after the deleted column
+    df_result_before_column = df_result.iloc[:, :column_position]
+    df_result_after_column = df_result.iloc[:, column_position:]
+
     # Prepend new columns and set column names
     # TODO: Fix handling of things with a header row MultiIndex
     df_result = pd.concat(
-        [df_new_columns, df_result],
+        [
+            df_result_before_column,
+            df_new_columns,
+            df_result_after_column,
+        ],
         ignore_index=True,
         axis=1
     ).reset_index(drop=True).set_axis(
-        labels=[c for c in df_new_columns.columns] + [
-            c[0] if isinstance(c, tuple)
-            else c
-            for c in df_result.columns
-        ],
+        labels=(
+            [
+                c[0] if isinstance(c, tuple)
+                else c
+                for c in df_result_before_column.columns
+            ] +
+            [c for c in df_new_columns.columns] +
+            [
+                c[0] if isinstance(c, tuple)
+                else c
+                for c in df_result_after_column.columns
+            ]
+        ),
         axis=1
     )
 
