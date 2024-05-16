@@ -536,12 +536,10 @@ def turn_column_into_columns_values(
         column_position = df.columns.get_loc(column)
 
     # Check if values all appear in column
-    # NB: The use of any() isn't strictly necessary, but it runs faster
-    # than the code does without it
     # NB: Nones - which occur where we've supplied a catchall case - are removed
     # before checking
     if strict and not all(
-        any(item in x for x in df.loc[:, column].values)
+        item in df.loc[:, column].values
         for item in [item for sublist in values for item in sublist if item is not None]
     ):
         raise ValueError(f'values {values} not in column {column}')
