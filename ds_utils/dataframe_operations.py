@@ -843,20 +843,20 @@ def turn_row_into_rows(
         None
 
     Future developments
-        Allow passing None as sep, in which case the function will
-        try to identify the separator automatically, looking
-        at the punctuation used most commonly in the row
+        - TODO: Either kill or merge with turn_row_into_rows_sep() and
+        allow row to be either a string or int
+        - TODO: Convert into an analogue of turn_column_into_columns()
     '''
 
     # Check if separator appears in row
     # NB: dropna() is needed as otherwise the function will fail if we
     # have NaNs in the row, as we can't iterate on them
     if strict and not any(
-        sep in value for value in df.iloc[row].dropna().values.tolist()
+        sep in value for value in df.iloc[row].dropna().values.tolist()[0]
     ):
         raise ValueError(f'sep {sep} not in row {row}')
     elif not strict and not any(
-        sep in value for value in df.iloc[row].dropna().values.tolist()
+        sep in value for value in df.iloc[row].dropna().values.tolist()[0]
     ):
         return df
 
