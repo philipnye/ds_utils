@@ -710,6 +710,117 @@ def turn_column_into_columns(
         )
 
 
+def turn_row_into_rows_sep(
+    df: pd.DataFrame,
+    row: str,
+    sep: str,
+    row_names: Optional[list] = None,
+    strict: bool = True,
+) -> pd.DataFrame:
+    '''
+    Turn a row into multiple rows, splitting on a separator
+
+    Parameters
+        - df: The dataframe to operate on
+        - row: The row to split
+        - sep: The separator to split on
+        # - missing_values: The values to use - generally for totals - where the original
+        # shape of the data means no value is present
+        - row_names: The names to use for the new rows
+        - strict: If True, raise an error if the separator is not in the row
+
+    Returns
+        - df: The dataframe with:
+            - The row turned into a MultiIndex where row begins as an index row
+            - The row split into multiple (non-index) rows where row begins
+            as a row
+
+    Notes
+        None
+
+    Future developments
+        - TODO: This works where the row is a sole index row, but most likely not in other
+        cases. It needs refactoring - probably keeping the 'Recreate dataframe' section but
+        changing much of what comes before it, and possibly even then reworking things to make
+        sure things with/without MultiIndex header columns work correctly
+        - Implement missing_values argument?
+    '''
+
+    # Convert header row to row where that's the row we want to operate on
+    # NB: This is done so the rest of the function can operate either on something
+    # that starts as a header row or otherwise
+    if row in df.columns.names:
+        # TODO: Uncomment/remove
+        # header_row_converted = True
+
+        # Identify row position
+        # NB: This is using Python's list index() method, rather than
+        # something to do with the pandas index
+        row_position = df.columns.names.index(row)
+
+        # Identify header rows before and after row we're operating on
+        # TODO: Uncomment/remove
+        # header_rows_before = df.columns.names[:row_position]
+        # header_rows_after = df.columns.names[row_position+1:]
+
+        # Stash header column names
+        # TODO: Uncomment/remove
+        # if df.index.names:
+        #     header_row_names = df.index.names
+
+        df_no_index = df.copy().T.reset_index().T
+    else:
+        # TODO: Uncomment/remove
+        # header_row_converted = False
+        row_position = df.index.get_loc(row)
+
+    # Check if separator appears in row
+    # NB: dropna() is needed as otherwise the function will fail if we
+    # have NaNs in the row, as we can't iterate on them
+    if strict and not all(
+        sep in value for value in df_no_index.loc[row].dropna().values.tolist()[0]
+    ):
+        raise ValueError(f'sep {sep} not in row {row}')
+    elif not strict:
+        raise NotImplementedError('strict=False not yet implemented')
+
+    # Duplicate rows into new df
+    new_row_count = len(row_names)
+
+    if not row_names:
+        row_names = [f'row_{i}' for i in range(new_row_count)]
+    df_new_rows = pd.concat(
+        [df_no_index.loc[row, :]] * new_row_count,
+        axis=0,
+        ignore_index=True
+    ).set_axis(labels=row_names, axis=0)
+
+    # Split row
+    for row_name in row_names:
+        df_new_rows.loc[row_name] = df_new_rows.loc[row_name].apply(
+            lambda x: x.split(sep, maxsplit=1)[row_names.index(row_name)]
+        )
+
+    # Create copy of original dataframe
+    # NB: We do this in order to safely drop the original row
+    df_result = df_no_index.copy()
+
+    # Drop original row
+    df_result.drop(row, axis=0, inplace=True)
+
+    # Split dataframe into rows before and after the deleted row
+    df_result_after_row = df_result.iloc[row_position:, :]
+
+    # Recreate dataframe
+    df_result = pd.DataFrame(
+        df_result_after_row.values,
+        index=df.index,
+        columns=pd.MultiIndex.from_frame(df_new_rows.T)
+    )
+
+    return df_result
+
+
 def turn_row_into_rows(
     df: pd.DataFrame,
     row: int,
