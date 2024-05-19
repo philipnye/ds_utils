@@ -471,7 +471,7 @@ def check_number_rowscolumns(
 
 def turn_column_into_columns_values(
     df: pd.DataFrame,
-    column: int,
+    column: str,
     values: list[list],
     missing_values: Optional[list] = None,
     column_names: Optional[list] = None,
@@ -655,7 +655,7 @@ def turn_column_into_columns_values(
 
 def turn_column_into_columns(
     df: pd.DataFrame,
-    column: int,
+    column: str,
     split_by: Union[Union[Literal['sep']], Literal['values']] = 'values',
     sep: Optional[bool] = None,
     values: Optional[list[list]] = None,
