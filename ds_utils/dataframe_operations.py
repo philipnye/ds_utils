@@ -542,7 +542,11 @@ def turn_column_into_columns_values(
         item in df.loc[:, column].values
         for item in [item for sublist in values for item in sublist if item is not None]
     ):
-        raise ValueError(f'values {values} not in column {column}')
+        values_not_found = [
+            item for item in [item for sublist in values for item in sublist if item is not None]
+            if item not in df.loc[:, column].values
+        ]
+        raise ValueError(f'values {values_not_found} not in column {column}')
     elif not strict:
         raise NotImplementedError('strict=False not yet implemented')
 
