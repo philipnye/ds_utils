@@ -82,6 +82,7 @@ def strip_name_title(
         'Miss', 'Mr', 'Mrs', 'Ms',
         'Dame', 'Sir',
         'Dr', 'Hon', 'Prof', 'The',
+        'Lt Col', 'Reverend', 'Rev', 'Rev Dr'
     ]:
         name = name.partition(' ')[2]
 
