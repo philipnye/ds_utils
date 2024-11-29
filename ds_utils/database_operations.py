@@ -11,8 +11,9 @@ def connect_sql_db(
     driver_version: Optional[str],
     server: str,
     database: str,
-    authentication: str,
-    username: str,
+    authentication: Optional[str] = None,
+    username: Optional[str] = None,
+    password: Optional[str] = None,
     dialect: str = 'mssql',
     driver: str = 'pyodbc',
     fast_executemany: Optional[bool] = True,
@@ -39,16 +40,30 @@ def connect_sql_db(
 
     # Build connection string
     if driver == 'pyodbc':
-        connection_string = (
-            f'{dialect}+{driver}:///?odbc_connect=' +
-            urllib.parse.quote_plus(
-                f'DRIVER={driver_version};SERVER={server};DATABASE={database};' +
-                f'UID={username};AUTHENTICATION={authentication};'
+
+        if password:
+            connection_string = (
+                f'{dialect}+{driver}:///?odbc_connect=' +
+                urllib.parse.quote_plus(
+                    f'DRIVER={driver_version};SERVER={server};DATABASE={database};' +
+                    f'UID={username};PWD={password};AUTHENTICATION={authentication};'
+                )
             )
-        )
+        else:
+            connection_string = (
+                f'{dialect}+{driver}:///?odbc_connect=' +
+                urllib.parse.quote_plus(
+                    f'DRIVER={driver_version};SERVER={server};DATABASE={database};' +
+                    f'UID={username};AUTHENTICATION={authentication};'
+                )
+            )
 
     # Create SQLAlchemy engine
-    engine = create_engine(connection_string, fast_executemany=fast_executemany, **kwargs)
+    engine = create_engine(
+        connection_string,
+        fast_executemany=fast_executemany,
+        **kwargs
+    )
 
     return engine
 
