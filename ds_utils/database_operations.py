@@ -1,7 +1,7 @@
 # !/usr/bin/env python
 # -*- coding: utf-8 -*-
 
-import urllib
+import urllib.parse
 from typing import Callable, Optional
 
 from sqlalchemy import create_engine, engine, exc
