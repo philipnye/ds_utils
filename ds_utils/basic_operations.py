@@ -76,6 +76,8 @@ def test_function_on_iterable(
     None
 
     '''
+    # Convert iterable to list to ensure it supports len() and multiple passes
+    iterable = list(iterable)
     # Test for empty iterable
     if empty_iterable_result:
         if len(iterable) == 0:
