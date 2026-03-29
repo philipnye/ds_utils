@@ -31,7 +31,7 @@ class CleanCommand(setuptools.Command):
 
 setuptools.setup(
     name='ds_utils',
-    version="2.0.2",
+    version="2.1.0",
     author="Philip Nye",
     author_email="philipnye@users.noreply.github.com",
     description="A collection of Python functions to execute common data science operations.",
@@ -45,6 +45,9 @@ setuptools.setup(
         "Operating System :: OS Independent",
     ],
     install_requires=requirements,
+    extras_require={
+        'geo': ['shapely>=2.0.0'],
+    },
     cmdclass={
         'clean': CleanCommand,
     }

@@ -1,8 +1,14 @@
 # !/usr/bin/env python
 # -*- coding: utf-8 -*-
 
-from shapely.geometry import MultiPolygon, Polygon
-from shapely import unary_union
+try:
+    from shapely.geometry import MultiPolygon, Polygon
+    from shapely import unary_union
+except ImportError as e:
+    raise ImportError(
+        "Shapely is required for geospatial operations. "
+        "Install it with: pip install ds_utils[geo]"
+    ) from e
 
 
 def merge_geometries(
