@@ -91,6 +91,7 @@ def fuzzy_match(
         data=df_matches[column_left].tolist(),
         columns=['match_string', 'match_score', 'df_right_id']
     )
+    df_matches['match_score'] = pd.to_numeric(df_matches['match_score'], errors='coerce').astype('float64')
 
     # Convert indexes to tuples where df_left and/or df_right have MultiIndexes
     # as otherwise any subsequent merging will fail

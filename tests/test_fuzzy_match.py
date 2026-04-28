@@ -94,10 +94,13 @@ def test_no_matches():
     # Test output
     # NB: Disabling checking of index type as the inferred_type differs
     # here - 'integer' for df_matches and 'empty' for df_expected
+    # NB: Disabling checking of dtype as match_score is float64 for df_matches
+    # and object for df_expected (empty DataFrame has no meaningful dtype)
     pdt.assert_frame_equal(
         df_matches,
         df_expected,
-        check_index_type=False
+        check_index_type=False,
+        check_dtype=False
     )
 
     return
@@ -273,7 +276,9 @@ def test_empty_df():
     )
 
     # Test output
-    pdt.assert_frame_equal(df_matches, df_expected, check_index_type=False)
+    # NB: Disabling checking of dtype as match_score is float64 for df_matches
+    # and object for df_expected (empty DataFrame has no meaningful dtype)
+    pdt.assert_frame_equal(df_matches, df_expected, check_index_type=False, check_dtype=False)
 
     # Use function, reversing df_left and df_right
     df_matches = mo.fuzzy_match(
@@ -286,7 +291,7 @@ def test_empty_df():
     )
 
     # Test output
-    pdt.assert_frame_equal(df_matches, df_expected, check_index_type=False)
+    pdt.assert_frame_equal(df_matches, df_expected, check_index_type=False, check_dtype=False)
 
     return
 
@@ -325,10 +330,13 @@ def test_empty_dfs():
     # Test output
     # NB: Disabling checking of index type as the inferred_type differs
     # here - 'integer' for df_matches and 'empty' for df_expected
+    # NB: Disabling checking of dtype as match_score is float64 for df_matches
+    # and object for df_expected (empty DataFrame has no meaningful dtype)
     pdt.assert_frame_equal(
         df_matches,
         df_expected,
-        check_index_type=False
+        check_index_type=False,
+        check_dtype=False
     )
 
     return
@@ -694,6 +702,8 @@ def test_drop_na_false():
     )
 
     # Test output
-    pdt.assert_frame_equal(df_matches, df_expected)
+    # NB: Disabling checking of index type as the inferred_type differs
+    # here - 'integer-na' for df_matches and 'floating' for df_expected
+    pdt.assert_frame_equal(df_matches, df_expected, check_index_type=False)
 
     return

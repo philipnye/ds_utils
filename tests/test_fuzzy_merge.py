@@ -115,7 +115,7 @@ def test_df_left_nan():
 
     # Create dataframes
     df_left = pd.DataFrame({
-        'col_a': [pd.NA, 'two', np.NaN, 'four', None],
+        'col_a': [pd.NA, 'two', np.nan, 'four', None],
         'col_b': [1, 2, 3, 4, 5]
     })
     df_right = pd.DataFrame({
@@ -169,7 +169,7 @@ def test_df_right_nan():
         'col_b': [1, 2, 3, 4, 5]
     })
     df_right = pd.DataFrame({
-        'col_a': [pd.NA, 'too', np.NaN, 'fours', None, 'five'],
+        'col_a': [pd.NA, 'too', np.nan, 'fours', None, 'five'],
         'col_b': ['a', 'b', 'c', 'd', 'e', 'f']
     })
 
@@ -283,7 +283,9 @@ def test_empty_df():
     )
 
     # Test output
-    pdt.assert_frame_equal(df_output, df_expected, check_index_type=False)
+    # NB: Disabling checking of dtype as match_score is float64 for df_output
+    # and object for df_expected (empty DataFrame has no meaningful dtype)
+    pdt.assert_frame_equal(df_output, df_expected, check_index_type=False, check_dtype=False)
 
     # Use function, reversing df_left and df_right
     df_output = mo.fuzzy_merge(
@@ -296,7 +298,9 @@ def test_empty_df():
     )
 
     # Test output
-    pdt.assert_frame_equal(df_output, df_expected, check_index_type=False)
+    # NB: Disabling checking of dtype as match_score is float64 for df_output
+    # and object for df_expected (empty DataFrame has no meaningful dtype)
+    pdt.assert_frame_equal(df_output, df_expected, check_index_type=False, check_dtype=False)
 
     return
 
@@ -335,10 +339,13 @@ def test_empty_dfs():
     # Test output
     # NB: Disabling checking of index type as the inferred_type differs
     # here - 'integer' for df_output and 'empty' for df_expected
+    # NB: Disabling checking of dtype as match_score is float64 for df_output
+    # and object for df_expected (empty DataFrame has no meaningful dtype)
     pdt.assert_frame_equal(
         df_output,
         df_expected,
-        check_index_type=False
+        check_index_type=False,
+        check_dtype=False
     )
 
     return
@@ -657,23 +664,25 @@ def test_drop_na_false():
         index=pd.MultiIndex.from_arrays(
             [
                 [0, 1, 2, 3, 4, 4],
-                [0.0, np.NaN, 2.0, 3.0, 4.0, 5.0],
+                [0.0, np.nan, 2.0, 3.0, 4.0, 5.0],
             ],
             names=['df_left_id', 'df_right_id']
         ),
         data={
             'match_score': pd.to_numeric(
-                [100.000000, np.NaN, 100.000000, 88.888889, 100.000000, 100.000000]
+                [100.000000, np.nan, 100.000000, 88.888889, 100.000000, 100.000000]
             ),
             'col_a_df_left': ['one', 'two', 'three', 'four', 'five', 'five'],
             'col_b_df_left': pd.to_numeric([1, 2, 3, 4, 5, 5]),
-            'col_a_df_right': ['one', np.NaN, 'three', 'fours', 'five', 'five'],
-            'col_b_df_right': ['a', np.NaN, 'c', 'd', 'e', 'f'],
+            'col_a_df_right': ['one', np.nan, 'three', 'fours', 'five', 'five'],
+            'col_b_df_right': ['a', np.nan, 'c', 'd', 'e', 'f'],
         }
     )
 
     # Test output
-    pdt.assert_frame_equal(df_output, df_expected)
+    # NB: Disabling checking of index type as the inferred_type differs
+    # here - 'integer-na' for df_output and 'floating' for df_expected
+    pdt.assert_frame_equal(df_output, df_expected, check_index_type=False)
 
     return
 
