@@ -31,7 +31,7 @@ class CleanCommand(setuptools.Command):
 
 setuptools.setup(
     name='ds_utils',
-    version="2.1.1",
+    version="3.0.0",
     author="Philip Nye",
     author_email="philipnye@users.noreply.github.com",
     description="A collection of Python functions to execute common data science operations.",

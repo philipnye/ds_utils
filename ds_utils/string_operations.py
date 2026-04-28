@@ -1,4 +1,24 @@
+import re
 from typing import Optional
+
+
+_PREFIXES = [
+    'The Rt Hon', 'Rt Hon', 'Rev Dr', 'Lt Col',
+    'Reverend', 'Dame', 'Miss', 'Prof', 'Sir', 'The',
+    'Dr', 'Hon', 'Mrs', 'Rev', 'Mr', 'Ms'
+]
+_PEERAGE_PREFIXES = ['Baroness', 'Earl', 'Lord', 'Viscount']
+_SUFFIXES = ['GBE', 'KBE', 'DBE', 'CBE', 'OBE', 'MBE', 'TD', 'KC', 'QC', 'MP']
+
+_PREFIX_RE = re.compile(
+    r'^(?:' + '|'.join(re.escape(p) for p in _PREFIXES) + r')\s+'
+)
+_PREFIX_RE_WITH_PEERAGE = re.compile(
+    r'^(?:' + '|'.join(re.escape(p) for p in _PREFIXES + _PEERAGE_PREFIXES) + r')\s+'
+)
+_SUFFIX_RE = re.compile(
+    r'\s+(?:' + '|'.join(re.escape(s) for s in _SUFFIXES) + r')$'
+)
 
 
 def split_title_names(
@@ -56,12 +76,12 @@ def split_title_names(
     return title, last_name, place
 
 
-def strip_name_title(
+def strip_name_affixes(
     name: str,
     exclude_peerage: bool = False
 ) -> str:
     '''
-        Strip titles from a name
+        Strip prefixes and post-nominal suffixes from a name
 
         Parameters
             name: Name to operate on
@@ -73,26 +93,15 @@ def strip_name_title(
         Notes
             None
     '''
+    if not isinstance(name, str):
+        return name
 
-    # Remove titles
-    if name.partition(' ')[0] in [
-        'Miss', 'Mr', 'Mrs', 'Ms',
-        'Dame', 'Sir',
-        'Dr', 'Hon', 'Prof', 'The',
-        'Lt Col', 'Reverend', 'Rev', 'Rev Dr'
-    ]:
-        name = name.partition(' ')[2]
+    prefix_re = _PREFIX_RE if exclude_peerage else _PREFIX_RE_WITH_PEERAGE
 
-    if not exclude_peerage:
-        if name.partition(' ')[0] in [
-            'Baroness', 'Earl', 'Lord', 'Viscount',
-        ]:
-            name = name.partition(' ')[2]
+    prev = None
+    while prev != name:
+        prev = name
+        name = prefix_re.sub('', name)
+        name = _SUFFIX_RE.sub('', name)
 
-    # Strip leading and trailing whitespace
-    name = name.strip()
-
-    # Replace multiple consecutive whitespace
-    name = ' '.join(name.split())
-
-    return name
+    return ' '.join(name.split())
