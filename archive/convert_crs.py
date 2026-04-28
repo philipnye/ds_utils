@@ -1,7 +1,4 @@
 # %%
-# !/usr/bin/env python
-# -*- coding: utf-8 -*-
-
 '''
     Purpose
         Convert GEOJSON files from one CRS to CRS84

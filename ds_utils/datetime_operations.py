@@ -1,6 +1,3 @@
-# !/usr/bin/env python
-# -*- coding: utf-8 -*-
-
 from dateutil.relativedelta import relativedelta
 from typing import Literal, Optional, Union
 

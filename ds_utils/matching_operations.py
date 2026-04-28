@@ -1,6 +1,3 @@
-# !/usr/bin/env python
-# -*- coding: utf-8 -*-
-
 from typing import Any, Callable, Hashable, Literal, Optional
 
 import pandas as pd

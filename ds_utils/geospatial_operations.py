@@ -1,6 +1,3 @@
-# !/usr/bin/env python
-# -*- coding: utf-8 -*-
-
 try:
     from shapely.geometry import MultiPolygon, Polygon
     from shapely import unary_union

@@ -1,6 +1,3 @@
-# !/usr/bin/env python
-# -*- coding: utf-8 -*-
-
 import urllib.parse
 from typing import Callable, Optional
 

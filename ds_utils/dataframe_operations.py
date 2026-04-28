@@ -1,6 +1,3 @@
-# !/usr/bin/env python
-# -*- coding: utf-8 -*-
-
 from typing import Literal, Optional, Union
 
 import pandas as pd

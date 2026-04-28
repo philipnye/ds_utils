@@ -1,7 +1,4 @@
 # %%
-# !/usr/bin/env python
-# -*- coding: utf-8 -*-
-
 '''
     Purpose
         Select values using regex and edit
