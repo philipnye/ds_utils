@@ -106,8 +106,6 @@ def fuzzy_match(
 
     # Add df_right id to index, meaning it will consist of df_left id and
     # df_right id
-    # NB: This will be a unique index, as long as df_left and df_right have
-    # unique indexes
     df_matches.set_index(['df_right_id'], append=True, inplace=True)
 
     return df_matches
@@ -180,10 +178,34 @@ def fuzzy_merge(
                 considered not to match with anything
     '''
 
+    # Save original left and right indexes for remapping after merging
+    # NB: When df_left or df_right has a MultiIndex, we flatten it to a list
+    # of tuples to use as df_left_id/df_right_id values in the output
+    if df_left.index.nlevels > 1:
+        original_left_index = list(pd.MultiIndex.to_flat_index(df_left.index))
+    else:
+        original_left_index = list(df_left.index)
+
+    if df_right.index.nlevels > 1:
+        original_right_index = list(pd.MultiIndex.to_flat_index(df_right.index))
+    else:
+        original_right_index = list(df_right.index)
+
+    # Reset df_left and df_right to positional RangeIndexes to prevent
+    # cartesian product matches when df_left or df_right have duplicate index
+    # values
+    # NB: We also use these for the subsequent merges
+    df_left_reset = df_left.reset_index(drop=True)
+    df_right_reset = df_right.reset_index(drop=True)
+
     # Fuzzy match datasets
+    # NB: We pass df_left_reset and df_right_reset rather than df_left and
+    # df_right, so that df_matches has positional integers as df_left_id and
+    # df_right_id, ensuring the subsequent merges do not produce cartesian
+    # products where df_left or df_right have duplicate index values
     df_matches = fuzzy_match(
-        df_left,
-        df_right,
+        df_left_reset,
+        df_right_reset,
         column_left,
         column_right,
         score_cutoff=score_cutoff,
@@ -193,19 +215,6 @@ def fuzzy_merge(
         scorer=scorer,
         scorer_kwargs=scorer_kwargs,
     )
-
-    # Convert indexes to tuples where df_left and/or df_right have MultiIndexes
-    # as otherwise any subsequent merging will fail
-    # NB: We do this on copies of df_left and/or df_right, and use these in the
-    # subsequent merge, so that we don't modify the original dataframes
-    df_left_flat_index = df_left.copy()
-    df_right_flat_index = df_right.copy()
-
-    if df_left.index.nlevels > 1:
-        df_left_flat_index.index = pd.MultiIndex.to_flat_index(df_left_flat_index.index)
-        df_left_flat_index.index.name = 'df_left_id'
-    if df_right.index.nlevels > 1:
-        df_right_flat_index.index = pd.MultiIndex.to_flat_index(df_right_flat_index.index)
 
     # Merge data
     # NB: Where we refer to df_left_id and df_right_id this is possible because fuzzy_match()
@@ -225,7 +234,7 @@ def fuzzy_merge(
     # index of df_left and the index of df_right, before proceeding with the merge
     # NB: x.name accesses the index of the row
     if df_matches.empty:
-        df_output = df_left_flat_index.merge(
+        df_output = df_left_reset.merge(
             df_matches,
             how='inner',
             left_index=True,
@@ -241,23 +250,23 @@ def fuzzy_merge(
             for col in df_output.columns
         ]
 
-    elif drop_na or df_left_flat_index.index.isin(
+    elif drop_na or df_left_reset.index.isin(
         df_matches.index.get_level_values('df_left_id')
     ).all():
-        df_output = df_left_flat_index.merge(
+        df_output = df_left_reset.merge(
             df_matches,
             how='inner',
             left_index=True,
             right_on='df_left_id'
         ).merge(
-            df_right_flat_index,
+            df_right_reset,
             how='left',
             left_on='df_right_id',
             right_index=True,
             suffixes=suffixes
         )
     else:
-        df_interim = df_left_flat_index.merge(
+        df_interim = df_left_reset.merge(
             df_matches,
             how='outer',
             left_index=True,
@@ -277,7 +286,7 @@ def fuzzy_merge(
         )
 
         df_output = df_interim.merge(
-            df_right_flat_index,
+            df_right_reset,
             how='left',
             left_on='df_right_id',
             right_index=True,
@@ -318,5 +327,20 @@ def fuzzy_merge(
             f'Invalid value for drop_cols: {drop_cols}. '
             'Valid values are None, "left", "right", "both", "match".'
         )
+
+    # Remap df_left_id and df_right_id from positional integers to original
+    # index values
+    # NB: For df_left or df_right with a MultiIndex, original index values are
+    # tuples
+    # NB: df_right_id may be NaN for unmatched rows where drop_na is False;
+    # in this case df_right_id values may be floats rather than integers
+    right_ids = df_output.index.get_level_values('df_right_id')
+    df_output.index = pd.MultiIndex.from_arrays(
+        [
+            [original_left_index[pos] for pos in df_output.index.get_level_values('df_left_id')],
+            [original_right_index[int(pos)] if not pd.isnull(pos) else pos for pos in right_ids]
+        ],
+        names=['df_left_id', 'df_right_id']
+    )
 
     return df_output

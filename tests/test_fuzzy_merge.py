@@ -1179,6 +1179,122 @@ def test_suffixes_and_drop_cols_both():
     return
 
 
+def test_duplicate_index_df_right():
+    '''
+        Test non-empty, non-MultiIndex df_left, non-empty, non-MultiIndex
+        df_right with duplicate index values, where matches exist
+    '''
+
+    # Create dataframes
+    # NB: Index value 1 appears twice in df_right, representing two records
+    # with the same ID
+    df_left = pd.DataFrame({
+        'col_a': ['one', 'two'],
+        'col_b': [1, 2]
+    })
+    df_right = pd.DataFrame(
+        index=[1, 1, 2],
+        data={
+            'col_a': ['one', 'two', 'three'],
+            'col_b': ['a', 'b', 'c']
+        }
+    )
+
+    # Use function
+    df_output = mo.fuzzy_merge(
+        df_left,
+        df_right,
+        'col_a',
+        'col_a',
+        score_cutoff=90,
+        limit=1
+    )
+
+    # Add expected output
+    # NB: Each df_left row should produce exactly one output row - no cartesian
+    # explosion from the duplicate df_right index values;
+    # df_right_id values are non-unique because both matches map to original
+    # df_right index value 1
+    df_expected = pd.DataFrame(
+        index=pd.MultiIndex.from_arrays(
+            [
+                [0, 1],
+                [1, 1],
+            ],
+            names=['df_left_id', 'df_right_id']
+        ),
+        data={
+            'match_score': [100.0, 100.0],
+            'col_a_df_left': ['one', 'two'],
+            'col_b_df_left': [1, 2],
+            'col_a_df_right': ['one', 'two'],
+            'col_b_df_right': ['a', 'b'],
+        }
+    )
+
+    # Test output
+    pdt.assert_frame_equal(df_output, df_expected)
+
+    return
+
+
+def test_duplicate_index_df_left():
+    '''
+        Test non-empty df_left with duplicate index values, non-empty,
+        non-MultiIndex df_right, where matches exist
+    '''
+
+    # Create dataframes
+    # NB: Index value 1 appears twice, representing two name records for the
+    # same person
+    df_left = pd.DataFrame(
+        index=[1, 1, 2],
+        data={
+            'col_a': ['one', 'one', 'two'],
+            'col_b': [10, 20, 30]
+        }
+    )
+    df_right = pd.DataFrame({
+        'col_a': ['one', 'two'],
+        'col_b': ['a', 'b']
+    })
+
+    # Use function
+    df_output = mo.fuzzy_merge(
+        df_left,
+        df_right,
+        'col_a',
+        'col_a',
+        score_cutoff=90,
+        limit=1
+    )
+
+    # Add expected output
+    # NB: Both df_left rows with index 1 should produce a separate output row,
+    # giving 3 rows total rather than a 2x2 cartesian product of 4 rows
+    df_expected = pd.DataFrame(
+        index=pd.MultiIndex.from_arrays(
+            [
+                [1, 1, 2],
+                [0, 0, 1],
+            ],
+            names=['df_left_id', 'df_right_id']
+        ),
+        data={
+            'match_score': [100.0, 100.0, 100.0],
+            'col_a_df_left': ['one', 'one', 'two'],
+            'col_b_df_left': [10, 20, 30],
+            'col_a_df_right': ['one', 'one', 'two'],
+            'col_b_df_right': ['a', 'a', 'b'],
+        }
+    )
+
+    # Test output
+    pdt.assert_frame_equal(df_output, df_expected)
+
+    return
+
+
 def test_suffixes_and_drop_cols_match():
     '''
         Test non-empty, non-MultiIndex df_left, non-empty, non-MultiIndex df_right,
