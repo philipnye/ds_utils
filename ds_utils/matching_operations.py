@@ -85,6 +85,10 @@ def fuzzy_match(
     df_matches = df_matches.explode(column_left)
 
     # Convert match tuple to columns
+    # NB: nulls need replacing with tuples of null, otherwise this throws an error
+    df_matches[column_left] = df_matches[column_left].apply(
+        lambda x: x if pd.notnull(x) else (pd.NA, pd.NA, pd.NA)
+    )
     df_matches = pd.DataFrame(
         index=df_matches.index,
         data=df_matches[column_left].tolist(),
